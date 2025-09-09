@@ -1,15 +1,25 @@
 <template>
-  <div class="stores-view">
+  <div class="owners-view">
     <header class="view-header">
-      <h1>Do'konlarni Boshqarish</h1>
+      <h1>Mulkdorlarni Boshqarish</h1>
       <button
         class="btn btn-primary"
         v-if="userRole === 'ADMIN'"
         @click="openAddModal"
       >
-        <span class="icon">+</span> Yangi Do'kon Qo'shish
+        <span class="icon">+</span> Yangi Mulkdor Qo'shish
       </button>
     </header>
+
+    <div
+      v-if="notification.message"
+      :class="['notification', notification.type]"
+    >
+      <p>{{ notification.message }}</p>
+      <button @click="notification.message = ''" class="close-btn">
+        &times;
+      </button>
+    </div>
 
     <div class="card">
       <div class="table-toolbar">
@@ -17,61 +27,65 @@
           type="text"
           class="search-input"
           v-model="searchQuery"
-          placeholder="Raqam yoki tavsif bo'yicha qidirish..."
+          placeholder="Ism, STIR yoki telefon bo'yicha qidirish..."
         />
       </div>
-
+      <!-- Loading Indicator -->
       <div v-if="isLoading" class="loading-indicator">
         <p>Ma'lumotlar yuklanmoqda...</p>
       </div>
 
+      <!-- Error Message -->
       <div v-else-if="error" class="error-message">
         <p>Xatolik yuz berdi: {{ error }}</p>
-        <button @click="fetchStores" class="btn btn-secondary">
+        <button @click="fetchOwners" class="btn btn-secondary">
           Qaytadan Urinish
         </button>
       </div>
 
+      <!-- Data Table -->
       <div v-else class="table-container">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Do'kon Raqami</th>
-              <th>Maydoni (m²)</th>
-              <th>Holati</th>
-              <th>Amallar</th>
+              <th>To'liq Ism</th>
+              <th>STIR (INN)</th>
+              <th>Telefon Raqami</th>
+              <th>Manzil</th>
+              <th>Status</th>
+              <th v-if="userRole === 'ADMIN'">Amallar</th>
             </tr>
           </thead>
-          <tbody v-if="stores.length > 0">
-            <tr v-for="store in stores" :key="store.id">
-              <td>{{ store.storeNumber }}</td>
-              <td>{{ store.area }}</td>
+          <tbody v-if="owners.length > 0">
+            <tr v-for="owner in owners" :key="owner.id">
+              <td>{{ owner.fullName }}</td>
+              <td>{{ owner.tin }}</td>
+              <td>{{ owner.phoneNumber || 'Kiritilmagan' }}</td>
+              <td>{{ owner.address }}</td>
               <td>
                 <span
                   :class="[
                     'status-badge',
-                    store.status === 'Band'
-                      ? 'status-occupied'
-                      : 'status-vacant'
+                    owner.isActive ? 'status-active' : 'status-inactive'
                   ]"
                 >
-                  {{ store.status }}
+                  {{ owner.isActive ? 'Aktiv' : 'Aktiv Emas' }}
                 </span>
               </td>
-              <td class="actions">
+
+              <td class="actions" v-if="userRole === 'ADMIN'">
                 <button
-                  v-if="userRole === 'ADMIN'"
                   class="btn-icon btn-edit"
                   title="Tahrirlash"
-                  @click="openEditModal(store)"
+                  @click="openEditModal(owner)"
                 >
                   <i class="fa-solid fa-pen-to-square"></i>
                 </button>
+
                 <button
-                  v-if="userRole === 'ADMIN'"
                   class="btn-icon btn-delete"
                   title="O'chirish"
-                  @click="handleDeleteStore(store)"
+                  @click="handleDeleteOwner(owner)"
                 >
                   <i class="fa-solid fa-trash"></i>
                 </button>
@@ -80,7 +94,7 @@
           </tbody>
           <tbody v-else>
             <tr>
-              <td colspan="4" class="text-center">Do'konlar topilmadi.</td>
+              <td colspan="6" class="text-center">Mulkdorlar topilmadi.</td>
             </tr>
           </tbody>
         </table>
@@ -90,20 +104,20 @@
     <Modal v-if="isModalVisible" @close="closeModal">
       <template #header>
         <h2>
-          {{ editingStore ? "Do'konni Tahrirlash" : "Yangi Do'kon Qo'shish" }}
+          {{ editingOwner ? 'Mulkdorni Tahrirlash' : "Yangi Mulkdor Qo'shish" }}
         </h2>
       </template>
       <template #body>
-        <StoreForm
-          ref="storeForm"
-          :initial-data="editingStore"
+        <OwnerForm
+          ref="ownerForm"
           @submit="handleFormSubmit"
+          :initialData="editingOwner"
         />
       </template>
       <template #footer>
         <button class="btn btn-secondary" @click="closeModal">Yopish</button>
-        <button class="btn btn-primary" @click="submitStoreForm">
-          Saqlash
+        <button class="btn btn-primary" @click="submitOwnerForm">
+          {{ editingOwner ? 'Saqlash' : "Qo'shish" }}
         </button>
       </template>
     </Modal>
@@ -111,41 +125,54 @@
 </template>
 
 <script>
-import { storeService } from '@/services/api'
+import { ownerService } from '@/services/api'
 import Modal from '@/components/Modal.vue'
-import StoreForm from '@/components/StoreForm.vue'
-import authService from '@/services/auth'
+import OwnerForm from '@/components/forms/OwnerForm.vue'
+import AuthService from '@/services/auth'
+import { useToast } from 'vue-toastification'
 
 export default {
-  name: 'StoresView',
-  components: { Modal, StoreForm },
+  setup() {
+    const toast = useToast()
+    return { toast }
+  },
+
+  name: 'OwnersView',
+  components: {
+    Modal,
+    OwnerForm
+  },
   data() {
     return {
-      stores: [],
+      owners: [],
       isLoading: false,
       error: null,
       isModalVisible: false,
-      editingStore: null,
+      editingOwner: null,
+      userRole: null,
       searchQuery: '',
       debounceTimer: null,
-      userRole: null
+      notification: {
+        message: '',
+        type: 'error'
+      }
     }
   },
   watch: {
     searchQuery() {
       clearTimeout(this.debounceTimer)
       this.debounceTimer = setTimeout(() => {
-        this.fetchStores()
-      }, 300)
+        this.fetchOwners()
+      }, 300) // 300ms after user stops typing
     }
   },
   methods: {
-    async fetchStores() {
+    async fetchOwners() {
       this.isLoading = true
       this.error = null
       try {
-        const response = await storeService.getAllStores(this.searchQuery)
-        this.stores = response.data
+        const response = await ownerService.getAllOwners(this.searchQuery)
+        this.owners = response.data
       } catch (err) {
         this.error = "Ma'lumotlarni yuklab bo'lmadi."
       } finally {
@@ -153,89 +180,104 @@ export default {
       }
     },
     openAddModal() {
-      this.editingStore = null
+      this.editingOwner = null
       this.isModalVisible = true
     },
-    openEditModal(store) {
-      this.editingStore = { ...store }
+    openEditModal(owner) {
+      this.editingOwner = { ...owner }
       this.isModalVisible = true
     },
     closeModal() {
       this.isModalVisible = false
-      this.editingStore = null
+      this.editingOwner = null
     },
-    submitStoreForm() {
-      this.$refs.storeForm.submitForm()
+    submitOwnerForm() {
+      this.$refs.ownerForm.submitForm()
     },
+
     handleFormSubmit(formData) {
-      if (this.editingStore) {
-        this.handleUpdateStore(formData)
+      if (this.editingOwner) {
+        this.handleUpdateOwner(formData)
       } else {
-        this.handleCreateStore(formData)
+        this.handleCreateOwner(formData)
       }
     },
-    async handleCreateStore(formData) {
+
+    async handleCreateOwner(formData) {
       try {
-        await storeService.createStore(formData)
+        await ownerService.createOwner(formData)
         this.closeModal()
-        await this.fetchStores()
-        alert("Do'kon muvaffaqiyatli qo'shildi!")
+        await this.fetchOwners()
+        alert("Mulkdor muvaffaqiyatli qo'shildi!")
       } catch (err) {
-        alert(err.response?.data?.error || "Do'kon yaratishda xatolik.")
+        const errorMessage =
+          err.response?.data?.message || 'Mulkdor yaratishda xatolik yuz berdi.'
+        console.error('Failed to create owner:', err)
+        alert(errorMessage)
       }
     },
-    async handleUpdateStore(formData) {
+
+    async handleUpdateOwner(formData) {
       try {
-        await storeService.updateStore(this.editingStore.id, formData)
+        await ownerService.updateOwner(this.editingOwner.id, formData)
         this.closeModal()
-        await this.fetchStores()
-        alert("Do'kon ma'lumotlari yangilandi!")
+        await this.fetchOwners()
+        this.toast.success('Mulkdor muvaffaqiyatli yangilandi.')
       } catch (err) {
-        alert(err.response?.data?.error || "Do'konni yangilashda xatolik.")
+        console.error('Failed to update owner:', err)
+        this.toast.error('Mulkdor yangilashda xatolik yuz berdi.')
       }
     },
-    async handleDeleteStore(store) {
-      if (
-        confirm(
-          `Haqiqatan ham "${store.storeNumber}" raqamli do'konni o'chirmoqchimisiz?`
-        )
-      ) {
+
+    async handleDeleteOwner(owner) {
+      if (confirm(`Haqiqatan ham "${owner.fullName}"ni o'chirmoqchimisiz?`)) {
         try {
-          await storeService.deleteStore(store.id)
-          await this.fetchStores()
-          alert("Do'kon o'chirildi.")
+          await ownerService.deleteOwner(owner.id)
+          this.toast.success(`"${owner.fullName}" muvaffaqiyatli o'chirildi.`)
+          await this.fetchOwners()
         } catch (err) {
-          alert(err.response?.data?.error || "Do'konni o'chirishda xatolik.")
+          const errorMessage =
+            err.response?.data?.error ||
+            "O'chirishda noma'lum xatolik yuz berdi."
+
+          this.toast.error(errorMessage)
         }
       }
     }
   },
+
   created() {
-    const user = authService.getUser()
+    const user = AuthService.getUser()
+    console.log('User data from token in OwnersView:', user)
+
     if (user) {
       this.userRole = user.role
     }
-    this.fetchStores()
+    this.fetchOwners()
   }
 }
 </script>
 
 <style scoped>
-/* You can copy the styles from OwnersView.vue and reuse them */
-.stores-view {
+/* General View Styles */
+.owners-view {
   width: 100%;
 }
+
 .view-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
 }
+
 h1 {
   font-size: 1.8rem;
   font-weight: 600;
   color: #2c3e50;
 }
+
+/* Card for table container */
 .card {
   background-color: #fff;
   border-radius: 8px;
@@ -243,9 +285,11 @@ h1 {
   padding: 1.5rem;
   overflow-x: auto;
 }
+
 .table-toolbar {
   margin-bottom: 1rem;
 }
+
 .search-input {
   width: 100%;
   max-width: 100%;
@@ -259,6 +303,8 @@ h1 {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(66, 185, 131, 0.2);
 }
+
+/* Generic Button Styles */
 .btn {
   padding: 0.6rem 1rem;
   border: none;
@@ -285,6 +331,8 @@ h1 {
 .btn .icon {
   margin-right: 0.5rem;
 }
+
+/* Table Styles */
 .table-container {
   width: 100%;
 }
@@ -308,6 +356,8 @@ h1 {
 .data-table tbody tr:hover {
   background-color: #f8f9fa;
 }
+
+/* Status Badge */
 .status-badge {
   padding: 0.3rem 0.6rem;
   border-radius: 12px;
@@ -315,12 +365,14 @@ h1 {
   font-weight: 600;
   color: #fff;
 }
-.status-occupied {
-  background-color: #e74c3c;
-} /* Red for Band */
-.status-vacant {
-  background-color: #27ae60;
-} /* Green for Bo'sh */
+.status-active {
+  background-color: #27ae60; /* Green */
+}
+.status-inactive {
+  background-color: #e74c3c; /* Red */
+}
+
+/* Action Buttons */
 .actions {
   display: flex;
   gap: 0.5rem;
@@ -340,6 +392,8 @@ h1 {
 .btn-delete:hover {
   background-color: #fbeae5;
 }
+
+/* Utility & States */
 .text-center {
   text-align: center;
 }
@@ -351,5 +405,31 @@ h1 {
 }
 .error-message {
   color: #c0392b;
+}
+.notification {
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 500;
+}
+.notification.error {
+  background-color: #fbeae5;
+  color: #c0392b;
+  border: 1px solid #e74c3c;
+}
+.notification.success {
+  background-color: #e9f5ee;
+  color: #27ae60;
+  border: 1px solid #27ae60;
+}
+.notification .close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: inherit;
 }
 </style>

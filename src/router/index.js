@@ -2,15 +2,15 @@ import { createRouter, createWebHistory } from 'vue-router'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
 
 // Import views directly for clarity in the main app structure
-import LoginView from '../views/LoginView.vue'
-import DashboardView from '../views/Dashboard.vue'
-import OwnersView from '../views/OwnersView.vue'
-import LeasesView from '../views/LeasesView.vue'
-import AssetsView from '../views/AssetsView.vue'
-import StoresView from '../views/StoresView.vue'
-import StallsView from '../views/StallsView.vue'
-import UsersView from '../views/UsersView.vue'
-import TransactionsView from '../views/TransactionsView.vue'
+import LoginView from '../views/public/LoginView.vue'
+import DashboardView from '../views/public/Dashboard.vue'
+import OwnersView from '../views/manage/OwnersView.vue'
+import LeasesView from '../views/manage/LeasesView.vue'
+import AssetsView from '../views/public/AssetsView.vue'
+import StoresView from '../views/manage/StoresView.vue'
+import StallsView from '../views/manage/StallsView.vue'
+import UsersView from '../views/manage/UsersView.vue'
+import TransactionsView from '../views/manage/TransactionsView.vue'
 
 const routes = [
   // --- FIX: Redirect root path to login page ---
@@ -25,9 +25,8 @@ const routes = [
     name: 'login',
     component: LoginView
   },
-  // --- FIX: Removed the /register route ---
 
-  // --- FIX: Combined all /dashboard routes into a single, nested structure ---
+  // ---  Combined all /dashboard routes into a single, nested structure ---
   {
     path: '/dashboard',
     component: DashboardLayout, // The parent layout for all dashboard pages

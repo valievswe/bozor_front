@@ -1,64 +1,75 @@
 <template>
-  <div class="users-view">
+  <div class="stalls-view">
     <header class="view-header">
-      <h1>Foydalanuvchilarni Boshqarish</h1>
+      <h1>Rastalarni Boshqarish</h1>
       <button
         class="btn btn-primary"
         v-if="userRole === 'ADMIN'"
         @click="openAddModal"
       >
-        <span class="icon">+</span> Yangi Foydalanuvchi
+        <span class="icon">+</span> Yangi Rasta Qo'shish
       </button>
     </header>
 
     <div class="card">
-      <div v-if="isLoading" class="loading-indicator">...</div>
-      <div v-else-if="error" class="error-message">...</div>
+      <div v-if="isLoading" class="loading-indicator">
+        <p>Ma'lumotlar yuklanmoqda...</p>
+      </div>
+
+      <div v-else-if="error" class="error-message">
+        <p>Xatolik yuz berdi: {{ error }}</p>
+        <button @click="fetchStalls" class="btn btn-secondary">
+          Qaytadan Urinish
+        </button>
+      </div>
 
       <div v-else class="table-container">
         <table class="data-table">
           <thead>
             <tr>
-              <th>To'liq Ism</th>
-              <th>Email</th>
-              <th>Rol</th>
-              <th>Status</th>
+              <th>Rasta Raqami</th>
+              <th>Maydoni (m²)</th>
+              <th>Holati</th>
               <th>Amallar</th>
             </tr>
           </thead>
-          <tbody>
-            <tr v-for="user in users" :key="user.id">
-              <td>{{ user.firstName }} {{ user.lastName }}</td>
-              <td>{{ user.email }}</td>
-              <td>
-                <span class="role-badge">{{ user.role.name }}</span>
-              </td>
+          <tbody v-if="stalls.length > 0">
+            <tr v-for="stall in stalls" :key="stall.id">
+              <td>{{ stall.stallNumber }}</td>
+              <td>{{ stall.area }}</td>
               <td>
                 <span
                   :class="[
                     'status-badge',
-                    user.isActive ? 'status-active' : 'status-inactive'
+                    stall.status === 'Band'
+                      ? 'status-occupied'
+                      : 'status-vacant'
                   ]"
                 >
-                  {{ user.isActive ? 'Aktiv' : 'Aktiv Emas' }}
+                  {{ stall.status }}
                 </span>
               </td>
               <td class="actions">
                 <button
                   class="btn-icon btn-edit"
                   title="Tahrirlash"
-                  @click="openEditModal(user)"
+                  @click="openEditModal(stall)"
                 >
                   <i class="fa-solid fa-pen-to-square"></i>
                 </button>
                 <button
                   class="btn-icon btn-delete"
                   title="O'chirish"
-                  @click="handleDeleteUser(user)"
+                  @click="handleDeleteStall(stall)"
                 >
                   <i class="fa-solid fa-trash"></i>
                 </button>
               </td>
+            </tr>
+          </tbody>
+          <tbody v-else>
+            <tr>
+              <td colspan="4" class="text-center">Rastalar topilmadi.</td>
             </tr>
           </tbody>
         </table>
@@ -66,163 +77,149 @@
     </div>
 
     <Modal v-if="isModalVisible" @close="closeModal">
-      <template #header
-        ><h2>
-          {{
-            editingUser
-              ? 'Foydalanuvchini Tahrirlash'
-              : 'Yangi Foydalanuvchi Yaratish'
-          }}
-        </h2></template
-      >
-      <template #body
-        ><UserForm
-          ref="userForm"
-          :initial-data="editingUser"
+      <template #header>
+        <h2>
+          {{ editingStall ? 'Rastani Tahrirlash' : "Yangi Rasta Qo'shish" }}
+        </h2>
+      </template>
+      <template #body>
+        <StallForm
+          ref="stallForm"
+          :initial-data="editingStall"
           @submit="handleFormSubmit"
-      /></template>
+        />
+      </template>
       <template #footer>
-        <button class="btn btn-secondary" @click="closeModal">Yopish</button>
-        <button class="btn btn-primary" @click="submitUserForm">Saqlash</button>
+        <button
+          class="btn btn-secondary"
+          v-if="userRole === 'ADMIN'"
+          @click="closeModal"
+        >
+          Yopish
+        </button>
+        <button
+          class="btn btn-primary"
+          v-if="userRole === 'ADMIN'"
+          @click="submitStallForm"
+        >
+          Saqlash
+        </button>
       </template>
     </Modal>
   </div>
 </template>
 
 <script>
-import { userService } from '@/services/api'
+import { stallService } from '@/services/api'
 import Modal from '@/components/Modal.vue'
-import UserForm from '@/components/UserForm.vue'
-import AuthService from '@/services/auth'
+import StallForm from '@/components/forms/StallForm.vue'
 
 export default {
-  name: 'UsersView',
-  components: { Modal, UserForm },
+  name: 'StallsView',
+  components: { Modal, StallForm },
   data() {
     return {
-      users: [],
+      stalls: [],
       isLoading: false,
       error: null,
       isModalVisible: false,
-      editingUser: null,
-      userRole: null
+      userRole: localStorage.getItem('userRole'),
+      editingStall: null
     }
   },
   methods: {
-    // --- Data Fetching ---
-    async fetchUsers() {
+    async fetchStalls() {
       this.isLoading = true
       this.error = null
       try {
-        const response = await userService.getAllUsers()
-        this.users = response.data
+        const response = await stallService.getAllStalls()
+        this.stalls = response.data
       } catch (err) {
-        this.error = "Foydalanuvchilarni yuklab bo'lmadi."
-        console.error('Failed to fetch users:', err)
+        this.error = "Ma'lumotlarni yuklab bo'lmadi."
       } finally {
         this.isLoading = false
       }
     },
-
-    // --- Modal Controls ---
     openAddModal() {
-      this.editingUser = null
+      this.editingStall = null
       this.isModalVisible = true
     },
-    openEditModal(user) {
-      this.editingUser = { ...user }
+    openEditModal(stall) {
+      this.editingStall = { ...stall }
       this.isModalVisible = true
     },
     closeModal() {
       this.isModalVisible = false
-      this.editingUser = null
+      this.editingStall = null
     },
-
-    // --- Form Submission Logic ---
-    submitUserForm() {
-      this.$refs.userForm.submitForm()
+    submitStallForm() {
+      this.$refs.stallForm.submitForm()
     },
     handleFormSubmit(formData) {
-      if (this.editingUser) {
-        this.handleUpdateUser(formData)
+      if (this.editingStall) {
+        this.handleUpdateStall(formData)
       } else {
-        this.handleCreateUser(formData)
+        this.handleCreateStall(formData)
       }
     },
-
-    // --- CRUD API Calls ---
-    async handleCreateUser(formData) {
+    async handleCreateStall(formData) {
       try {
-        await userService.createUser(formData)
+        await stallService.createStall(formData)
         this.closeModal()
-        await this.fetchUsers()
-        alert('Foydalanuvchi muvaffaqiyatli yaratildi!')
+        await this.fetchStalls()
+        alert("Rasta muvaffaqiyatli qo'shildi!")
       } catch (err) {
-        alert(
-          err.response?.data?.message || 'Foydalanuvchi yaratishda xatolik.'
-        )
+        alert(err.response?.data?.error || 'Rasta yaratishda xatolik.')
       }
     },
-    async handleUpdateUser(formData) {
+    async handleUpdateStall(formData) {
       try {
-        await userService.updateUser(this.editingUser.id, formData)
+        await stallService.updateStall(this.editingStall.id, formData)
         this.closeModal()
-        await this.fetchUsers()
-        alert("Foydalanuvchi ma'lumotlari yangilandi!")
+        await this.fetchStalls()
+        alert("Rasta ma'lumotlari yangilandi!")
       } catch (err) {
-        alert(
-          err.response?.data?.message || 'Foydalanuvchini yangilashda xatolik.'
-        )
+        alert(err.response?.data?.error || 'Rastani yangilashda xatolik.')
       }
     },
-    async handleDeleteUser(user) {
+    async handleDeleteStall(stall) {
       if (
         confirm(
-          `Haqiqatan ham "${user.email}" foydalanuvchisini o'chirmoqchimisiz?`
+          `Haqiqatan ham "${stall.stallNumber}" raqamli rastani o'chirmoqchimisiz?`
         )
       ) {
         try {
-          await userService.deleteUser(user.id)
-          await this.fetchUsers()
-          alert("Foydalanuvchi o'chirildi.")
+          await stallService.deleteStall(stall.id)
+          await this.fetchStalls()
+          alert("Rasta o'chirildi.")
         } catch (err) {
-          alert(
-            err.response?.data?.message ||
-              "Foydalanuvchini o'chirishda xatolik."
-          )
+          alert(err.response?.data?.error || "Rastani o'chirishda xatolik.")
         }
       }
     }
   },
   created() {
-    const user = AuthService.getUser()
-    if (user) {
-      this.userRole = user.role
-    }
-    this.fetchUsers()
+    this.fetchStalls()
   }
 }
 </script>
+
 <style scoped>
-/* General View Styles */
-.users-view {
+/* These styles can be identical to StoresView.vue */
+.stalls-view {
   width: 100%;
 }
-
 .view-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
 }
-
 h1 {
   font-size: 1.8rem;
   font-weight: 600;
   color: #2c3e50;
 }
-
-/* Card for table container */
 .card {
   background-color: #fff;
   border-radius: 8px;
@@ -230,8 +227,6 @@ h1 {
   padding: 1.5rem;
   overflow-x: auto;
 }
-
-/* Generic Button Styles */
 .btn {
   padding: 0.6rem 1rem;
   border: none;
@@ -258,8 +253,6 @@ h1 {
 .btn .icon {
   margin-right: 0.5rem;
 }
-
-/* Table Styles */
 .table-container {
   width: 100%;
 }
@@ -272,11 +265,10 @@ h1 {
 .data-table td {
   padding: 1rem;
   border-bottom: 1px solid #ecf0f1;
-  vertical-align: middle;
 }
 .data-table th {
-  background-color: #203c5a;
-  color: #ffffff;
+  background-color: #f8f9fa;
+  color: #34495e;
   font-size: 0.85rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -284,37 +276,19 @@ h1 {
 .data-table tbody tr:hover {
   background-color: #f8f9fa;
 }
-
-/* Role & Status Badges */
-.role-badge,
 .status-badge {
   padding: 0.3rem 0.6rem;
   border-radius: 12px;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #14163d;
-  display: inline-block;
+  color: #fff;
 }
-
-.role-admin {
-  background-color: #9b59b6;
-} /* Purple */
-.role-accountant {
-  background-color: #3498db;
-} /* Blue */
-.role-cashier {
-  background-color: #f1c40f;
-  color: #333;
-} /* Yellow */
-
-.status-active {
-  background-color: #27ae60;
-} /* Green */
-.status-inactive {
+.status-occupied {
   background-color: #e74c3c;
-} /* Red */
-
-/* Action Buttons */
+} /* Red for Band */
+.status-vacant {
+  background-color: #27ae60;
+} /* Green for Bo'sh */
 .actions {
   display: flex;
   gap: 0.5rem;
@@ -334,8 +308,6 @@ h1 {
 .btn-delete:hover {
   background-color: #fbeae5;
 }
-
-/* Utility & States */
 .text-center {
   text-align: center;
 }

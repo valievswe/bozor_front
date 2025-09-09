@@ -1,13 +1,13 @@
 <template>
-  <div class="owners-view">
+  <div class="stores-view">
     <header class="view-header">
-      <h1>Mulkdorlarni Boshqarish</h1>
+      <h1>Do'konlarni Boshqarish</h1>
       <button
         class="btn btn-primary"
         v-if="userRole === 'ADMIN'"
         @click="openAddModal"
       >
-        <span class="icon">+</span> Yangi Mulkdor Qo'shish
+        <span class="icon">+</span> Yangi Do'kon Qo'shish
       </button>
     </header>
 
@@ -17,65 +17,61 @@
           type="text"
           class="search-input"
           v-model="searchQuery"
-          placeholder="Ism, STIR yoki telefon bo'yicha qidirish..."
+          placeholder="Raqam yoki tavsif bo'yicha qidirish..."
         />
       </div>
-      <!-- Loading Indicator -->
+
       <div v-if="isLoading" class="loading-indicator">
         <p>Ma'lumotlar yuklanmoqda...</p>
       </div>
 
-      <!-- Error Message -->
       <div v-else-if="error" class="error-message">
         <p>Xatolik yuz berdi: {{ error }}</p>
-        <button @click="fetchOwners" class="btn btn-secondary">
+        <button @click="fetchStores" class="btn btn-secondary">
           Qaytadan Urinish
         </button>
       </div>
 
-      <!-- Data Table -->
       <div v-else class="table-container">
         <table class="data-table">
           <thead>
             <tr>
-              <th>To'liq Ism</th>
-              <th>STIR (INN)</th>
-              <th>Telefon Raqami</th>
-              <th>Manzil</th>
-              <th>Status</th>
-              <th v-if="userRole === 'ADMIN'">Amallar</th>
+              <th>Do'kon Raqami</th>
+              <th>Maydoni (m²)</th>
+              <th>Holati</th>
+              <th>Amallar</th>
             </tr>
           </thead>
-          <tbody v-if="owners.length > 0">
-            <tr v-for="owner in owners" :key="owner.id">
-              <td>{{ owner.fullName }}</td>
-              <td>{{ owner.tin }}</td>
-              <td>{{ owner.phoneNumber || 'Kiritilmagan' }}</td>
-              <td>{{ owner.address }}</td>
+          <tbody v-if="stores.length > 0">
+            <tr v-for="store in stores" :key="store.id">
+              <td>{{ store.storeNumber }}</td>
+              <td>{{ store.area }}</td>
               <td>
                 <span
                   :class="[
                     'status-badge',
-                    owner.isActive ? 'status-active' : 'status-inactive'
+                    store.status === 'Band'
+                      ? 'status-occupied'
+                      : 'status-vacant'
                   ]"
                 >
-                  {{ owner.isActive ? 'Aktiv' : 'Aktiv Emas' }}
+                  {{ store.status }}
                 </span>
               </td>
-
-              <td class="actions" v-if="userRole === 'ADMIN'">
+              <td class="actions">
                 <button
+                  v-if="userRole === 'ADMIN'"
                   class="btn-icon btn-edit"
                   title="Tahrirlash"
-                  @click="openEditModal(owner)"
+                  @click="openEditModal(store)"
                 >
                   <i class="fa-solid fa-pen-to-square"></i>
                 </button>
-
                 <button
+                  v-if="userRole === 'ADMIN'"
                   class="btn-icon btn-delete"
                   title="O'chirish"
-                  @click="handleDeleteOwner(owner)"
+                  @click="handleDeleteStore(store)"
                 >
                   <i class="fa-solid fa-trash"></i>
                 </button>
@@ -84,7 +80,7 @@
           </tbody>
           <tbody v-else>
             <tr>
-              <td colspan="6" class="text-center">Mulkdorlar topilmadi.</td>
+              <td colspan="4" class="text-center">Do'konlar topilmadi.</td>
             </tr>
           </tbody>
         </table>
@@ -93,19 +89,21 @@
 
     <Modal v-if="isModalVisible" @close="closeModal">
       <template #header>
-        <h2>Yangi Mulkdor Qo'shish</h2>
+        <h2>
+          {{ editingStore ? "Do'konni Tahrirlash" : "Yangi Do'kon Qo'shish" }}
+        </h2>
       </template>
       <template #body>
-        <OwnerForm
-          ref="ownerForm"
-          @submit="handleCreateOwner"
-          :initialData="editingOwner"
+        <StoreForm
+          ref="storeForm"
+          :initial-data="editingStore"
+          @submit="handleFormSubmit"
         />
       </template>
       <template #footer>
         <button class="btn btn-secondary" @click="closeModal">Yopish</button>
-        <button class="btn btn-primary" @click="submitOwnerForm">
-          Qo'shish
+        <button class="btn btn-primary" @click="submitStoreForm">
+          Saqlash
         </button>
       </template>
     </Modal>
@@ -113,44 +111,41 @@
 </template>
 
 <script>
-import { ownerService } from '@/services/api'
+import { storeService } from '@/services/api'
 import Modal from '@/components/Modal.vue'
-import OwnerForm from '@/components/OwnerForm.vue'
-import AuthService from '@/services/auth'
+import StoreForm from '@/components/forms/StoreForm.vue'
+import authService from '@/services/auth'
 
 export default {
-  name: 'OwnersView',
-  components: {
-    Modal,
-    OwnerForm
-  },
+  name: 'StoresView',
+  components: { Modal, StoreForm },
   data() {
     return {
-      owners: [],
+      stores: [],
       isLoading: false,
       error: null,
       isModalVisible: false,
-      editingOwner: null,
-      userRole: null,
+      editingStore: null,
       searchQuery: '',
-      debounceTimer: null
+      debounceTimer: null,
+      userRole: null
     }
   },
   watch: {
     searchQuery() {
       clearTimeout(this.debounceTimer)
       this.debounceTimer = setTimeout(() => {
-        this.fetchOwners()
-      }, 300) // 300ms after user stops typing
+        this.fetchStores()
+      }, 300)
     }
   },
   methods: {
-    async fetchOwners() {
+    async fetchStores() {
       this.isLoading = true
       this.error = null
       try {
-        const response = await ownerService.getAllOwners(this.searchQuery)
-        this.owners = response.data
+        const response = await storeService.getAllStores(this.searchQuery)
+        this.stores = response.data
       } catch (err) {
         this.error = "Ma'lumotlarni yuklab bo'lmadi."
       } finally {
@@ -158,107 +153,89 @@ export default {
       }
     },
     openAddModal() {
-      this.editingOwner = null
+      this.editingStore = null
       this.isModalVisible = true
     },
-    openEditModal(owner) {
-      this.editingOwner = { ...owner }
+    openEditModal(store) {
+      this.editingStore = { ...store }
       this.isModalVisible = true
     },
     closeModal() {
       this.isModalVisible = false
-      this.editingOwner = null
+      this.editingStore = null
     },
-    submitOwnerForm() {
-      this.$refs.ownerForm.submitForm()
+    submitStoreForm() {
+      this.$refs.storeForm.submitForm()
     },
-
     handleFormSubmit(formData) {
-      if (this.editingOwner) {
-        this.handleUpdateOwner(formData)
+      if (this.editingStore) {
+        this.handleUpdateStore(formData)
       } else {
-        this.handleCreateOwner(formData)
+        this.handleCreateStore(formData)
       }
     },
-
-    async handleCreateOwner(formData) {
+    async handleCreateStore(formData) {
       try {
-        await ownerService.createOwner(formData)
+        await storeService.createStore(formData)
         this.closeModal()
-        await this.fetchOwners()
-        alert("Mulkdor muvaffaqiyatli qo'shildi!")
+        await this.fetchStores()
+        alert("Do'kon muvaffaqiyatli qo'shildi!")
       } catch (err) {
-        const errorMessage =
-          err.response?.data?.message || 'Mulkdor yaratishda xatolik yuz berdi.'
-        console.error('Failed to create owner:', err)
-        alert(errorMessage)
+        alert(err.response?.data?.error || "Do'kon yaratishda xatolik.")
       }
     },
-
-    async handleUpdateOwner(formData) {
+    async handleUpdateStore(formData) {
       try {
-        await ownerService.updateOwner(this.editingOwner.id, formData)
+        await storeService.updateStore(this.editingStore.id, formData)
         this.closeModal()
-        await this.fetchOwners()
-        alert('Mulkdor muvaffaqiyatli yangilandi!')
+        await this.fetchStores()
+        alert("Do'kon ma'lumotlari yangilandi!")
       } catch (err) {
-        const errorMessage =
-          err.response?.data?.message ||
-          'Mulkdor yangilashda xatolik yuz berdi.'
-        console.error('Failed to update owner:', err)
-        alert(errorMessage)
+        alert(err.response?.data?.error || "Do'konni yangilashda xatolik.")
       }
     },
-
-    async handleDeleteOwner(owner) {
-      if (confirm(`Haqiqatan ham "${owner.fullName}"ni o'chirmoqchimisiz?`)) {
+    async handleDeleteStore(store) {
+      if (
+        confirm(
+          `Haqiqatan ham "${store.storeNumber}" raqamli do'konni o'chirmoqchimisiz?`
+        )
+      ) {
         try {
-          await ownerService.deleteOwner(owner.id)
-          await this.fetchOwners()
-          alert('Mulkdor muvaffaqiyatli o`chirildi!')
+          await storeService.deleteStore(store.id)
+          await this.fetchStores()
+          alert("Do'kon o'chirildi.")
         } catch (err) {
-          const errorMessage =
-            err.response?.data?.message ||
-            'Mulkdor o`chirishda xatolik yuz berdi.'
-          console.error('Failed to delete owner:', err)
-          alert(errorMessage)
+          alert(err.response?.data?.error || "Do'konni o'chirishda xatolik.")
         }
       }
     }
   },
-
   created() {
-    const user = AuthService.getUser()
-    console.log('User data from token in OwnersView:', user)
-
+    const user = authService.getUser()
     if (user) {
       this.userRole = user.role
     }
-    this.fetchOwners()
+    this.fetchStores()
   }
 }
 </script>
 
 <style scoped>
-/* General View Styles */
-.owners-view {
+/* You can copy the styles from OwnersView.vue and reuse them */
+.stores-view {
   width: 100%;
 }
-
 .view-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
 }
-
 h1 {
   font-size: 1.8rem;
   font-weight: 600;
   color: #2c3e50;
 }
-
-/* Card for table container */
 .card {
   background-color: #fff;
   border-radius: 8px;
@@ -266,11 +243,9 @@ h1 {
   padding: 1.5rem;
   overflow-x: auto;
 }
-
 .table-toolbar {
   margin-bottom: 1rem;
 }
-
 .search-input {
   width: 100%;
   max-width: 100%;
@@ -284,8 +259,6 @@ h1 {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(66, 185, 131, 0.2);
 }
-
-/* Generic Button Styles */
 .btn {
   padding: 0.6rem 1rem;
   border: none;
@@ -312,8 +285,6 @@ h1 {
 .btn .icon {
   margin-right: 0.5rem;
 }
-
-/* Table Styles */
 .table-container {
   width: 100%;
 }
@@ -337,8 +308,6 @@ h1 {
 .data-table tbody tr:hover {
   background-color: #f8f9fa;
 }
-
-/* Status Badge */
 .status-badge {
   padding: 0.3rem 0.6rem;
   border-radius: 12px;
@@ -346,14 +315,12 @@ h1 {
   font-weight: 600;
   color: #fff;
 }
-.status-active {
-  background-color: #27ae60; /* Green */
-}
-.status-inactive {
-  background-color: #e74c3c; /* Red */
-}
-
-/* Action Buttons */
+.status-occupied {
+  background-color: #e74c3c;
+} /* Red for Band */
+.status-vacant {
+  background-color: #27ae60;
+} /* Green for Bo'sh */
 .actions {
   display: flex;
   gap: 0.5rem;
@@ -373,8 +340,6 @@ h1 {
 .btn-delete:hover {
   background-color: #fbeae5;
 }
-
-/* Utility & States */
 .text-center {
   text-align: center;
 }

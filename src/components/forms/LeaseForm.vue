@@ -3,12 +3,21 @@
     <!-- Owner Selection -->
     <div class="form-group">
       <label for="ownerId">Tadbirkor (Mulkdor) *</label>
-      <select id="ownerId" v-model="form.ownerId" required>
-        <option :value="null" disabled>Tadbirkorni tanlang...</option>
-        <option v-for="owner in owners" :key="owner.id" :value="owner.id">
-          {{ owner.fullName }} (STIR: {{ owner.tin }})
-        </option>
-      </select>
+      <SearchableSelect
+        :api-service="searchOwners"
+        placeholder="Tadbirkor ismi yoki STIR bo'yicha qidiring..."
+        @select="onOwnerSelect"
+        :initial-text="editingOwnerName"
+      >
+        <template #item="{ item }">
+          <div>
+            <strong>{{ item.fullName }}</strong>
+            <div style="font-size: 0.8em; color: #777">
+              STIR: {{ item.tin }}
+            </div>
+          </div>
+        </template>
+      </SearchableSelect>
     </div>
 
     <!-- Asset Type Selection -->
@@ -113,9 +122,11 @@
 
 <script>
 import { ownerService, storeService, stallService } from '@/services/api'
+import SearchableSelect from './SearchableSelect.vue'
 
 export default {
   name: 'LeaseForm',
+  components: { SearchableSelect },
   props: { initialData: { type: Object, default: null } },
   emits: ['submit'],
   data() {
@@ -124,55 +135,45 @@ export default {
         ownerId: null,
         storeId: null,
         stallId: null,
-        shopMonthlyFee: null,
-        stallMonthlyFee: null,
-        guardFee: null,
+        shopMonthlyFee: 0,
+        stallMonthlyFee: 0,
+        guardFee: 0,
         certificateNumber: '',
         paymeKassaId: '',
         issueDate: null,
         expiryDate: null
       },
-      assetType: 'store', // Default selection
-      owners: [],
+      assetType: 'store',
       stores: [],
-      stalls: []
+      stalls: [],
+      editingOwnerName: ''
     }
   },
   computed: {
-    // Only show stores that are 'Bo'sh' (vacant)
     availableStores() {
-      if (this.editingStoreNumber) {
-        return this.stores // If editing, show all stores
-      }
-      return this.stores.filter(s => s.status === "Bo'sh")
+      return this.stores.filter(s => {
+        return s.status === "Bo'sh" || s.id === this.form.storeId
+      })
     },
-    // Only show stalls that are 'Bo'sh' (vacant)
     availableStalls() {
-      if (this.editingStallNumber) {
-        return this.stalls
-      }
-      return this.stalls.filter(s => s.status === "Bo'sh")
-    },
-    editingStoreNumber() {
-      return this.initialData?.store?.storeNumber
-    },
-    editingStallNumber() {
-      return this.initialData?.stall?.stallNumber
+      return this.stalls.filter(s => {
+        return s.status === "Bo'sh" || s.id === this.form.stallId
+      })
     }
   },
   watch: {
-    // When switching between Store and Stall, clear the other's ID and fee
     assetType(newType) {
       if (newType === 'store') {
         this.form.stallId = null
-        this.form.stallMonthlyFee = null
+        this.form.stallMonthlyFee = 0
       } else {
         this.form.storeId = null
-        this.form.shopMonthlyFee = null
+        this.form.shopMonthlyFee = 0
       }
     },
     initialData: {
       handler(newData) {
+        this.resetForm()
         if (newData) {
           this.form = {
             ownerId: newData.ownerId,
@@ -183,7 +184,6 @@ export default {
             guardFee: newData.guardFee,
             certificateNumber: newData.certificateNumber,
             paymeKassaId: newData.paymeKassaId,
-            // Format dates for the date input field
             issueDate: newData.issueDate
               ? newData.issueDate.split('T')[0]
               : null,
@@ -193,34 +193,51 @@ export default {
           }
           if (newData.storeId) this.assetType = 'store'
           if (newData.stallId) this.assetType = 'stall'
-        } else {
-          this.resetForm()
+          if (newData.owner) {
+            this.editingOwnerName = newData.owner.fullName
+          }
         }
       },
-      immediate: true,
-      deep: true
+      immediate: true
     }
   },
   methods: {
+    searchOwners(searchTerm) {
+      return ownerService.getAllOwners(searchTerm)
+    },
+    onOwnerSelect(owner) {
+      this.form.ownerId = owner.id
+      this.editingOwnerName = owner.fullName
+    },
     submitForm() {
       const formData = { ...this.form }
-      // Ensure empty date strings are sent as null
       if (!formData.issueDate) formData.issueDate = null
       if (!formData.expiryDate) formData.expiryDate = null
       this.$emit('submit', formData)
     },
     resetForm() {
-      this.form = {}
+      this.form = {
+        ownerId: null,
+        storeId: null,
+        stallId: null,
+        shopMonthlyFee: 0,
+        stallMonthlyFee: 0,
+        guardFee: 0,
+        certificateNumber: '',
+        paymeKassaId: '',
+        issueDate: null,
+        expiryDate: null
+      }
       this.assetType = 'store'
+      this.editingOwnerName = ''
     },
     async loadDependencies() {
       try {
-        const [ownersRes, storesRes, stallsRes] = await Promise.all([
-          ownerService.getAllOwners(),
+        // We no longer load ALL owners. They are fetched on demand by SearchableSelect.
+        const [storesRes, stallsRes] = await Promise.all([
           storeService.getAllStores(),
           stallService.getAllStalls()
         ])
-        this.owners = ownersRes.data
         this.stores = storesRes.data
         this.stalls = stallsRes.data
       } catch (error) {
@@ -234,56 +251,141 @@ export default {
   }
 }
 </script>
-
 <style scoped>
+/* --- General Form Layout --- */
 .lease-form {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.25rem; /* Space between form groups */
 }
+
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(250px, 1fr)
+  ); /* Responsive grid */
   gap: 1rem 1.5rem;
 }
+
 .form-group {
   display: flex;
   flex-direction: column;
 }
+
 label {
   margin-bottom: 0.5rem;
   font-weight: 500;
   color: #34495e;
   font-size: 0.9rem;
 }
+
+/* --- General Input Styling --- */
 input,
-select,
-textarea {
+select {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 5px;
   font-size: 1rem;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+  background-color: #fff;
 }
+
 input:focus,
 select:focus {
   outline: none;
-  border-color: var(--primary-color);
+  border-color: var(--primary-color, #42b983);
   box-shadow: 0 0 0 3px rgba(66, 185, 131, 0.2);
 }
+
+/* --- Radio Button Styling --- */
 .radio-group {
   display: flex;
   gap: 1.5rem;
+  background-color: #f8f9fa;
+  padding: 0.75rem;
+  border-radius: 5px;
+  border: 1px solid #ddd;
 }
+
 .radio-group label {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   font-weight: normal;
+  cursor: pointer;
 }
+
 .form-divider {
   border: none;
   border-top: 1px solid #eee;
   margin: 0.5rem 0;
+}
+
+/* --- SearchableSelect Component Specific Styling --- */
+/* This targets the component via a deep selector to style its internal elements */
+:deep(.searchable-select) {
+  position: relative;
+}
+
+:deep(.searchable-select input) {
+  padding-right: 30px; /* Make space for the spinner */
+}
+
+:deep(.searchable-select .spinner) {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid var(--primary-color, #42b983);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+}
+
+:deep(.searchable-select .dropdown),
+:deep(.searchable-select .dropdown-empty) {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 5px 5px;
+  max-height: 200px;
+  overflow-y: auto;
+  list-style-type: none;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.searchable-select .dropdown li) {
+  padding: 0.75rem;
+  cursor: pointer;
+}
+
+:deep(.searchable-select .dropdown li:hover) {
+  background-color: #f5f5f5;
+}
+
+:deep(.searchable-select .dropdown-empty) {
+  padding: 0.75rem;
+  color: #777;
+}
+
+@keyframes spin {
+  /* --- Keyframes for Spinner Animation --- */
+  0% {
+    transform: translateY(-50%) rotate(0deg);
+  }
+  100% {
+    transform: translateY(-50%) rotate(360deg);
+  }
 }
 </style>

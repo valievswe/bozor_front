@@ -98,7 +98,7 @@
 <script>
 import { transactionService } from '@/services/api'
 import Modal from '@/components/Modal.vue'
-import TransactionDetails from '../components/TransactionDetails.vue'
+import TransactionDetails from '@/components/TransactionDetails.vue'
 import QRCodeGenerator from '@/components/QRCodeGen.vue'
 
 export default {

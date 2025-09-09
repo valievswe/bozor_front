@@ -112,8 +112,16 @@ export const stallService = {
 // --- LEASE SERVICE ---
 export const leaseService = {
   // GET /api/leases
-  getAllLeases(searchTerm) {
-    return apiClient.get('/leases', { params: { search: searchTerm } })
+  getAllLeases(searchTerm, status = 'active', page = 1, limit = 10) {
+    const params = {
+      status,
+      page,
+      limit
+    }
+    if (searchTerm) {
+      params.search = searchTerm
+    }
+    return apiClient.get('/leases', { params })
   },
 
   // POST /api/leases
@@ -126,9 +134,13 @@ export const leaseService = {
     return apiClient.put(`/leases/${id}`, leaseData)
   },
 
-  // PATCH /api/leases/:id/deactivate
-  deactivateLease(id) {
-    return apiClient.patch(`/leases/${id}/deactivate`)
+  // PATCH /api/leases/:id/archive
+  archiveLease(id) {
+    return apiClient.patch(`/leases/${id}/archive`)
+  },
+
+  activateLease(id) {
+    return apiClient.patch(`/leases/${id}/activate`)
   }
 }
 

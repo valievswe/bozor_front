@@ -6,7 +6,7 @@
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <h3>Bozor Boshqaruvi</h3>
+        <h3>Myrent</h3>
       </div>
       <nav class="sidebar-nav">
         <ul>
