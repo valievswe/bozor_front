@@ -11,12 +11,13 @@ import StoresView from '../views/manage/StoresView.vue'
 import StallsView from '../views/manage/StallsView.vue'
 import UsersView from '../views/manage/UsersView.vue'
 import TransactionsView from '../views/manage/TransactionsView.vue'
+import HomeView from '../views/public/HomeView.vue'
 
 const routes = [
-  // --- FIX: Redirect root path to login page ---
   {
     path: '/',
-    redirect: '/login'
+    name: 'home',
+    component: HomeView
   },
 
   // --- Public Routes ---
@@ -34,7 +35,7 @@ const routes = [
     children: [
       {
         path: '', // Renders at /dashboard
-        name: 'dashboard', // FIX: Unique name for the main dashboard view
+        name: 'dashboard',
         component: DashboardView
       },
       {
