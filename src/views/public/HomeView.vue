@@ -1,7 +1,6 @@
 <template>
   <div class="homepage">
     <header class="hero">
-      <!-- Added a semi-transparent overlay for better text readability -->
       <div class="hero-overlay"></div>
       <div class="hero-content">
         <h1 class="hero-title">Bozor Ijarasini Boshqarish Tizimi (BIMS)</h1>
@@ -21,9 +20,7 @@
         <h2 class="section-title">Tizim Imkoniyatlari</h2>
         <div class="features-grid">
           <div class="feature-card">
-            <div class="feature-icon">
-              <i class="fas fa-users"></i>
-            </div>
+            <div class="feature-icon"><i class="fas fa-users"></i></div>
             <h3 class="feature-title">Markazlashgan Boshqaruv</h3>
             <p class="feature-description">
               Barcha tadbirkorlar, do'konlar, rastalar va ijara shartnomalari
@@ -45,9 +42,7 @@
           </div>
 
           <div class="feature-card">
-            <div class="feature-icon">
-              <i class="fas fa-qrcode"></i>
-            </div>
+            <div class="feature-icon"><i class="fas fa-qrcode"></i></div>
             <h3 class="feature-title">Zamonaviy To'lovlar</h3>
             <p class="feature-description">
               Har bir ijara shartnomasi uchun unikal QR-kod orqali to'lov qabul
@@ -57,21 +52,17 @@
           </div>
 
           <div class="feature-card">
-            <div class="feature-icon">
-              <i class="fas fa-search"></i>
-            </div>
+            <div class="feature-icon"><i class="fas fa-search"></i></div>
             <h3 class="feature-title">Tezkor Qidiruv va Filtrlash</h3>
             <p class="feature-description">
-              Mulkdorlar, do'konlar yoki shartnomalarni istalgan parametr (ism,
-              STIR, do'kon raqami) bo'yicha soniyalar ichida toping.
+              Mulkdorlar, do'konlar yoki shartnomalarni istalgan parametr
+              bo'yicha soniyalar ichida toping.
             </p>
           </div>
 
           <div class="feature-card">
-            <div class="feature-icon">
-              <i class="fas fa-shield-alt"></i>
-            </div>
-            <h3 class="feature-title">Xavfsiz Rol Tizimi (RBAC)</h3>
+            <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+            <h3 class="feature-title">Xavfsiz Rol Tizimi</h3>
             <p class="feature-description">
               Har bir xodim (Admin, Kassir, Hisobchi) faqat o'ziga tegishli
               vazifalarni bajara oladi. Ma'lumotlar xavfsizligi to'liq
@@ -80,37 +71,37 @@
           </div>
 
           <div class="feature-card">
-            <div class="feature-icon">
-              <i class="fas fa-chart-line"></i>
-            </div>
+            <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
             <h3 class="feature-title">Hisobotlar va Analitika</h3>
             <p class="feature-description">
               Moliyaviy tushumlar, qarzdorliklar va bozorning umumiy holati
-              haqida real vaqt rejimida hisobotlar oling va to'g'ri qarorlar
-              qabul qiling.
+              haqida real vaqt rejimida hisobotlar oling.
             </p>
           </div>
         </div>
       </div>
     </main>
 
-    <!-- NEW, UPDATED FOOTER -->
     <footer class="footer">
       <div class="container footer-content">
-        <p class="copyright">
-          &copy; {{ new Date().getFullYear() }} BIMS. Barcha huquqlar
-          himoyalangan.
-        </p>
-        <p class="credit">
-          Dasturiy ta'minot
-          <a
-            href="https://alphanet.uz"
-            target="_blank"
-            rel="noopener noreferrer"
-            >ALPHANET Inc.</a
-          >
-          tomonidan ishlab chiqildi.
-        </p>
+        <div class="footer-left">
+          <h4 class="footer-title">BIMS</h4>
+          <p class="copyright">
+            &copy; {{ new Date().getFullYear() }} Barcha huquqlar himoyalangan.
+          </p>
+        </div>
+        <div class="footer-right">
+          <p class="credit">
+            Dasturiy ta'minot
+            <a
+              href="https://alphanet.uz"
+              target="_blank"
+              rel="noopener noreferrer"
+              >ALPHANET Inc.</a
+            >
+            tomonidan ishlab chiqildi.
+          </p>
+        </div>
       </div>
     </footer>
   </div>
@@ -123,26 +114,34 @@ export default {
 </script>
 
 <style scoped>
-/* No changes needed for Font Awesome import */
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
 
 :root {
-  --primary-color: #3498db;
+  --primary-color: #27ae60; /* A more vibrant green */
   --secondary-color: #2c3e50;
   --background-light: #f4f7f9;
   --text-dark: #333;
-  --text-light: #ecf0f1;
+  --text-light: #ffffff;
+  --border-color: #e0e6ed;
 }
 
 .homepage {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
   color: var(--text-dark);
   display: flex;
   flex-direction: column;
   min-height: 100vh;
 }
 
-/* --- UPDATED HERO SECTION --- */
+/* --- Hero Section --- */
 .hero {
   background: url('https://images.unsplash.com/photo-1528698827591-e19ccd7e23ec?q=80&w=2070')
     no-repeat center center/cover;
@@ -151,8 +150,8 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 60vh;
-  position: relative; /* Needed for the overlay */
+  min-height: 50vh;
+  position: relative;
 }
 
 .hero-overlay {
@@ -161,98 +160,38 @@ export default {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(44, 62, 80, 0.6); /* Dark semi-transparent overlay */
+  background-color: rgba(10, 25, 41, 0.7); /* Darker, slightly blue overlay */
 }
 
 .hero-content {
-  position: relative; /* Place content on top of the overlay */
+  position: relative;
   z-index: 2;
   max-width: 800px;
   padding: 2rem 1.5rem;
 }
 
 .hero-title {
-  font-size: 2.8rem;
+  font-size: 3rem;
   font-weight: 700;
   margin-bottom: 1rem;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); /* Improved text shadow */
 }
 
 .hero-subtitle {
-  font-size: 1.2rem;
-  font-weight: 300;
+  font-size: 1.25rem;
+  font-weight: 400;
   line-height: 1.6;
   margin-bottom: 2.5rem;
   opacity: 0.9;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
 
-/* --- FEATURES SECTION (No Changes) --- */
-.features-section {
-  padding: 4rem 1.5rem;
-  background-color: var(--background-light);
-  flex-grow: 1; /* Makes sure the main content pushes the footer down */
-}
-
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.section-title {
-  text-align: center;
-  font-size: 2.2rem;
-  font-weight: 600;
-  margin-bottom: 3rem;
-  color: var(--secondary-color);
-}
-
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-}
-
-.feature-card {
-  background-color: #fff;
-  padding: 2rem;
-  border-radius: 8px;
-  text-align: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  transition:
-    transform 0.3s ease,
-    box-shadow 0.3s ease;
-}
-
-.feature-card:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-}
-
-.feature-icon {
-  font-size: 2.5rem;
-  color: var(--primary-color);
-  margin-bottom: 1rem;
-}
-
-.feature-title {
-  font-size: 1.4rem;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
-  color: var(--secondary-color);
-}
-
-.feature-description {
-  font-size: 1rem;
-  line-height: 1.6;
-  color: #555;
-}
-
-/* --- BUTTONS (No Changes) --- */
 .btn {
-  padding: 0.8rem 2rem;
+  padding: 0.8rem 2.5rem;
   border: none;
   border-radius: 5px;
   font-size: 1.1rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   text-decoration: none;
   display: inline-block;
@@ -265,25 +204,93 @@ export default {
 }
 
 .btn-primary:hover {
-  background-color: #2980b9;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  background-color: #2ecc71; /* Lighter green on hover */
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
 }
 
-/* --- NEW FOOTER --- */
+/* --- Features Section --- */
+.features-section {
+  padding: 5rem 1.5rem;
+  background-color: #ffffff;
+  flex-grow: 1;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.section-title {
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 4rem;
+  color: var(--secondary-color);
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2rem;
+}
+
+.feature-card {
+  background-color: var(--background-light);
+  padding: 2.5rem 2rem;
+  border-radius: 8px;
+  text-align: center;
+  border: 1px solid var(--border-color);
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+}
+
+.feature-icon {
+  font-size: 2.8rem;
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+}
+
+.feature-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--secondary-color);
+}
+
+.feature-description {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #555;
+}
+
+/* --- Footer --- */
 .footer {
   background-color: var(--secondary-color);
-  color: #bdc3c7; /* Lighter gray for footer text */
-  padding: 2rem 1.5rem;
-  font-size: 0.9rem;
+  color: #aeb6bf;
+  padding: 2.5rem 1.5rem;
+  border-top: 4px solid var(--primary-color);
 }
 
 .footer-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap; /* Allows stacking on small screens */
+  flex-wrap: wrap;
   gap: 1rem;
+}
+
+.footer-left .footer-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 0.5rem;
 }
 
 .credit {
@@ -291,7 +298,7 @@ export default {
 }
 
 .credit a {
-  color: #ecf0f1;
+  color: #ffffff;
   text-decoration: none;
   font-weight: 500;
   transition: color 0.3s ease;
@@ -301,7 +308,7 @@ export default {
   color: var(--primary-color);
 }
 
-/* --- RESPONSIVE DESIGN (Updated for Footer) --- */
+/* --- Responsive Design --- */
 @media (max-width: 768px) {
   .hero-title {
     font-size: 2.2rem;
@@ -313,7 +320,8 @@ export default {
     flex-direction: column;
     text-align: center;
   }
-  .credit {
+  .footer-right,
+  .footer-left {
     text-align: center;
   }
 }
