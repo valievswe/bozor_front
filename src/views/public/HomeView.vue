@@ -1,6 +1,8 @@
 <template>
   <div class="homepage">
     <header class="hero">
+      <!-- Added a semi-transparent overlay for better text readability -->
+      <div class="hero-overlay"></div>
       <div class="hero-content">
         <h1 class="hero-title">Bozor Ijarasini Boshqarish Tizimi (BIMS)</h1>
         <p class="hero-subtitle">
@@ -8,7 +10,9 @@
           avtomatlashtiring va barcha ma'lumotlarni yagona platformada samarali
           boshqaring.
         </p>
-        <a href="/login" class="btn btn-primary">Tizimga Kirish</a>
+        <router-link to="/login" class="btn btn-primary"
+          >Tizimga Kirish</router-link
+        >
       </div>
     </header>
 
@@ -90,11 +94,24 @@
       </div>
     </main>
 
+    <!-- NEW, UPDATED FOOTER -->
     <footer class="footer">
-      <p>
-        &copy; {{ new Date().getFullYear() }} BIMS. Barcha huquqlar
-        himoyalangan.
-      </p>
+      <div class="container footer-content">
+        <p class="copyright">
+          &copy; {{ new Date().getFullYear() }} BIMS. Barcha huquqlar
+          himoyalangan.
+        </p>
+        <p class="credit">
+          Dasturiy ta'minot
+          <a
+            href="https://alphanet.uz"
+            target="_blank"
+            rel="noopener noreferrer"
+            >ALPHANET Inc.</a
+          >
+          tomonidan ishlab chiqildi.
+        </p>
+      </div>
     </footer>
   </div>
 </template>
@@ -106,6 +123,7 @@ export default {
 </script>
 
 <style scoped>
+/* No changes needed for Font Awesome import */
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
 
 :root {
@@ -119,25 +137,38 @@ export default {
 .homepage {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: var(--text-dark);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
-/* Hero Section */
+/* --- UPDATED HERO SECTION --- */
 .hero {
-  background:
-    linear-gradient(rgba(44, 62, 80, 0.7), rgba(44, 62, 80, 0.7)),
-    url('https://images.unsplash.com/photo-1528698827591-e19ccd7e23ec?q=80&w=2070')
-      no-repeat center center/cover;
+  background: url('https://images.unsplash.com/photo-1528698827591-e19ccd7e23ec?q=80&w=2070')
+    no-repeat center center/cover;
   color: var(--text-light);
-  padding: 6rem 1.5rem;
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 60vh;
+  position: relative; /* Needed for the overlay */
+}
+
+.hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(44, 62, 80, 0.6); /* Dark semi-transparent overlay */
 }
 
 .hero-content {
+  position: relative; /* Place content on top of the overlay */
+  z-index: 2;
   max-width: 800px;
+  padding: 2rem 1.5rem;
 }
 
 .hero-title {
@@ -154,33 +185,11 @@ export default {
   opacity: 0.9;
 }
 
-.btn {
-  padding: 0.8rem 2rem;
-  border: none;
-  border-radius: 5px;
-  font-size: 1.1rem;
-  font-weight: 500;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-block;
-  transition: all 0.3s ease;
-}
-
-.btn-primary {
-  background-color: var(--primary-color);
-  color: white;
-}
-
-.btn-primary:hover {
-  background-color: #2980b9;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-
-/* Features Section */
+/* --- FEATURES SECTION (No Changes) --- */
 .features-section {
   padding: 4rem 1.5rem;
   background-color: var(--background-light);
+  flex-grow: 1; /* Makes sure the main content pushes the footer down */
 }
 
 .container {
@@ -237,22 +246,75 @@ export default {
   color: #555;
 }
 
-/* Footer */
+/* --- BUTTONS (No Changes) --- */
+.btn {
+  padding: 0.8rem 2rem;
+  border: none;
+  border-radius: 5px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* --- NEW FOOTER --- */
 .footer {
   background-color: var(--secondary-color);
-  color: var(--text-light);
-  text-align: center;
-  padding: 1.5rem;
+  color: #bdc3c7; /* Lighter gray for footer text */
+  padding: 2rem 1.5rem;
   font-size: 0.9rem;
 }
 
-/* Responsive Design */
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap; /* Allows stacking on small screens */
+  gap: 1rem;
+}
+
+.credit {
+  text-align: right;
+}
+
+.credit a {
+  color: #ecf0f1;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.credit a:hover {
+  color: var(--primary-color);
+}
+
+/* --- RESPONSIVE DESIGN (Updated for Footer) --- */
 @media (max-width: 768px) {
   .hero-title {
     font-size: 2.2rem;
   }
   .hero-subtitle {
     font-size: 1.1rem;
+  }
+  .footer-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  .credit {
+    text-align: center;
   }
 }
 </style>
