@@ -117,7 +117,12 @@ import SearchableSelect from './SearchableSelect.vue'
 export default {
   name: 'LeaseForm',
   components: { SearchableSelect },
-  props: { initialData: { type: Object, default: null } },
+  props: {
+    initialData: {
+      type: Object,
+      default: null
+    }
+  },
   emits: ['submit'],
   data() {
     return {
@@ -135,19 +140,20 @@ export default {
       assetType: 'store',
       stores: [],
       stalls: [],
+
       editingOwnerName: ''
     }
   },
   computed: {
     availableStores() {
-      return this.stores.filter(s => {
-        return s.status === "Bo'sh" || s.id === this.form.storeId
-      })
+      return this.stores.filter(
+        s => s.status === "Bo'sh" || s.id === this.initialData?.storeId
+      )
     },
     availableStalls() {
-      return this.stalls.filter(s => {
-        return s.status === "Bo'sh" || s.id === this.form.stallId
-      })
+      return this.stalls.filter(
+        s => s.status === "Bo'sh" || s.id === this.initialData?.stallId
+      )
     }
   },
   watch: {
@@ -163,6 +169,7 @@ export default {
     initialData: {
       handler(newData) {
         this.resetForm()
+
         if (newData) {
           this.form = {
             ownerId: newData.ownerId,
@@ -172,7 +179,6 @@ export default {
             stallMonthlyFee: newData.stallMonthlyFee,
             guardFee: newData.guardFee,
             certificateNumber: newData.certificateNumber,
-            paymeKassaId: newData.paymeKassaId,
             issueDate: newData.issueDate
               ? newData.issueDate.split('T')[0]
               : null,
@@ -180,11 +186,13 @@ export default {
               ? newData.expiryDate.split('T')[0]
               : null
           }
-          if (newData.storeId) this.assetType = 'store'
-          if (newData.stallId) this.assetType = 'stall'
-          if (newData.owner) {
+
+          if (newData.owner && newData.owner.fullName) {
             this.editingOwnerName = newData.owner.fullName
           }
+
+          if (newData.storeId) this.assetType = 'store'
+          if (newData.stallId) this.assetType = 'stall'
         }
       },
       immediate: true
@@ -202,6 +210,10 @@ export default {
       const formData = { ...this.form }
       if (!formData.issueDate) formData.issueDate = null
       if (!formData.expiryDate) formData.expiryDate = null
+      if (!this.form.ownerId) {
+        alert('Iltimos, tadbirkorni tanlang.')
+        return
+      }
       this.$emit('submit', formData)
     },
     resetForm() {
@@ -213,7 +225,6 @@ export default {
         stallMonthlyFee: 0,
         guardFee: 0,
         certificateNumber: '',
-        paymeKassaId: '',
         issueDate: null,
         expiryDate: null
       }
@@ -239,20 +250,17 @@ export default {
   }
 }
 </script>
+
 <style scoped>
-/* --- General Form Layout --- */
 .lease-form {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem; /* Space between form groups */
+  gap: 1.25rem;
 }
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(
-    auto-fit,
-    minmax(250px, 1fr)
-  ); /* Responsive grid */
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1rem 1.5rem;
 }
 
@@ -268,7 +276,6 @@ label {
   font-size: 0.9rem;
 }
 
-/* --- General Input Styling --- */
 input,
 select {
   width: 100%;
@@ -289,7 +296,6 @@ select:focus {
   box-shadow: 0 0 0 3px rgba(66, 185, 131, 0.2);
 }
 
-/* --- Radio Button Styling --- */
 .radio-group {
   display: flex;
   gap: 1.5rem;

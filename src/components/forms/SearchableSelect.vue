@@ -12,8 +12,7 @@
     <ul v-if="showDropdown && items.length > 0" class="dropdown">
       <li v-for="item in items" :key="item.id" @click="selectItem(item)">
         <slot name="item" :item="item">
-          {{ item.name }}
-          <!-- Fallback display -->
+          {{ item.fullName || item.name }}
         </slot>
       </li>
     </ul>
@@ -153,8 +152,8 @@ input:focus {
   max-height: 220px;
   overflow-y: auto;
   list-style-type: none;
-  z-index: 1000;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
 }
 
 .dropdown li {

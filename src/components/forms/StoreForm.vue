@@ -36,7 +36,6 @@
         />
       </div>
 
-      <!-- NEW FIELD: Store Type -->
       <div class="form-group">
         <label for="type">Do'kon Turi *</label>
         <select id="type" v-model="form.type" required>
@@ -76,18 +75,17 @@ export default {
         storeNumber: '',
         area: null,
         description: '',
-        paymeKassaId: '', // Added
-        type: 'SHOP' // Added
+        paymeKassaId: '',
+        type: 'SHOP'
       }
     }
   },
   watch: {
     initialData: {
       handler(newData) {
+        this.resetForm()
         if (newData) {
-          this.form = { ...newData }
-        } else {
-          this.resetForm()
+          this.form = { ...this.form, ...newData }
         }
       },
       immediate: true,
@@ -119,7 +117,6 @@ export default {
 </script>
 
 <style scoped>
-/* You can reuse the styles from OwnerForm.vue or create new ones */
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
