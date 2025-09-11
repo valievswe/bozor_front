@@ -24,12 +24,35 @@
         />
       </div>
 
+      <!-- NEW FIELD: Payme Kassa ID -->
+      <div class="form-group">
+        <label for="paymeKassaId">Payme Kassa ID *</label>
+        <input
+          id="paymeKassaId"
+          v-model="form.paymeKassaId"
+          type="text"
+          required
+          placeholder="Payme Business'dan olingan ID"
+        />
+      </div>
+
+      <!-- NEW FIELD: Store Type -->
+      <div class="form-group">
+        <label for="type">Do'kon Turi *</label>
+        <select id="type" v-model="form.type" required>
+          <option value="SHOP">Do'kon</option>
+          <option value="WAREHOUSE">Ombor</option>
+          <option value="CONTAINER">Konteyner</option>
+          <option value="OTHER">Boshqa</option>
+        </select>
+      </div>
+
       <div class="form-group full-width">
         <label for="description">Qo'shimcha Ma'lumot</label>
         <textarea
           id="description"
           v-model="form.description"
-          rows="4"
+          rows="3"
           placeholder="Masalan, burchakdagi do'kon..."
         ></textarea>
       </div>
@@ -52,7 +75,9 @@ export default {
       form: {
         storeNumber: '',
         area: null,
-        description: ''
+        description: '',
+        paymeKassaId: '', // Added
+        type: 'SHOP' // Added
       }
     }
   },
@@ -71,13 +96,22 @@ export default {
   },
   methods: {
     submitForm() {
-      this.$emit('submit', this.form)
+      const formData = {
+        storeNumber: this.form.storeNumber,
+        area: this.form.area,
+        paymeKassaId: this.form.paymeKassaId,
+        type: this.form.type,
+        description: this.form.description
+      }
+      this.$emit('submit', formData)
     },
     resetForm() {
       this.form = {
         storeNumber: '',
         area: null,
-        description: ''
+        description: '',
+        paymeKassaId: '',
+        type: 'SHOP'
       }
     }
   }

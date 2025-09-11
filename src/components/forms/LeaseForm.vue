@@ -68,10 +68,10 @@
     <!-- Lease Details -->
     <div class="form-grid">
       <div class="form-group">
-        <label for="shopMonthlyFee" v-if="assetType === 'store'"
+        <label v-if="assetType === 'store'" for="shopMonthlyFee"
           >Do'kon Oylik To'lovi (so'm)</label
         >
-        <label for="stallMonthlyFee" v-if="assetType === 'stall'"
+        <label v-if="assetType === 'stall'" for="stallMonthlyFee"
           >Rasta Oylik To'lovi (so'm)</label
         >
         <input
@@ -100,15 +100,6 @@
         />
       </div>
       <div class="form-group">
-        <label for="paymeKassaId">Payme Kassa ID *</label>
-        <input
-          id="paymeKassaId"
-          v-model="form.paymeKassaId"
-          type="text"
-          required
-        />
-      </div>
-      <div class="form-group">
         <label for="issueDate">Berilgan Sana</label>
         <input id="issueDate" v-model="form.issueDate" type="date" />
       </div>
@@ -119,7 +110,6 @@
     </div>
   </form>
 </template>
-
 <script>
 import { ownerService, storeService, stallService } from '@/services/api'
 import SearchableSelect from './SearchableSelect.vue'
@@ -139,7 +129,6 @@ export default {
         stallMonthlyFee: 0,
         guardFee: 0,
         certificateNumber: '',
-        paymeKassaId: '',
         issueDate: null,
         expiryDate: null
       },
@@ -233,7 +222,6 @@ export default {
     },
     async loadDependencies() {
       try {
-        // We no longer load ALL owners. They are fetched on demand by SearchableSelect.
         const [storesRes, stallsRes] = await Promise.all([
           storeService.getAllStores(),
           stallService.getAllStalls()

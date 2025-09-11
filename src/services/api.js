@@ -179,3 +179,15 @@ export const transactionService = {
     return apiClient.get(`/payments/transactions/${id}`)
   }
 }
+
+export const paymentService = {
+  getPublicLeaseInfo(leaseId) {
+    return apiClient.get(`/payments/public/leases/${leaseId}`)
+  },
+  initiatePayment(data) {
+    return apiClient.post('/payments/public/initiate', data)
+  },
+  getTransactionHistory(leaseId) {
+    return apiClient.get(`/payments/transactions/${leaseId}`)
+  }
+}

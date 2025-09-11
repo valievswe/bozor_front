@@ -12,6 +12,7 @@ import StallsView from '../views/manage/StallsView.vue'
 import UsersView from '../views/manage/UsersView.vue'
 import TransactionsView from '../views/manage/TransactionsView.vue'
 import HomeView from '../views/public/HomeView.vue'
+import PublicPaymentView from '../views/public/PublicPaymentView.vue'
 
 const routes = [
   {
@@ -26,12 +27,18 @@ const routes = [
     name: 'login',
     component: LoginView
   },
+  {
+    path: '/pay/lease/:leaseId',
+    name: 'PublicPayment',
+    component: PublicPaymentView,
+    props: true
+  },
 
-  // ---  Combined all /dashboard routes into a single, nested structure ---
   {
     path: '/dashboard',
-    component: DashboardLayout, // The parent layout for all dashboard pages
-    meta: { requiresAuth: true }, // Protect all child routes
+    component: DashboardLayout,
+    meta: { requiresAuth: true },
+
     children: [
       {
         path: '', // Renders at /dashboard
@@ -65,7 +72,7 @@ const routes = [
       },
       {
         path: 'users', // Renders at /dashboard/users
-        name: 'users', // FIX: Only one definition for this name
+        name: 'users',
         component: UsersView
       },
       {
@@ -76,7 +83,6 @@ const routes = [
     ]
   },
 
-  // --- Catch-all route for 404 Not Found, redirecting to login ---
   {
     path: '/:pathMatch(.*)*',
     redirect: '/login'
@@ -88,7 +94,6 @@ const router = createRouter({
   routes
 })
 
-// Your navigation guard is correct and does not need changes.
 router.beforeEach((to, from, next) => {
   const loggedIn = localStorage.getItem('authToken')
 
@@ -99,7 +104,6 @@ router.beforeEach((to, from, next) => {
       next()
     }
   } else {
-    // Optional: If a logged-in user tries to visit the login page, redirect them to the dashboard
     if (loggedIn && to.name === 'login') {
       next({ name: 'dashboard' })
     } else {

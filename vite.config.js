@@ -12,7 +12,7 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
-    allowedHosts: ['polite-candles-design.loca.lt']
+    allowedHosts: ['strong-buckets-invent.loca.lt']
   },
   build: {
     outDir: 'dist',
