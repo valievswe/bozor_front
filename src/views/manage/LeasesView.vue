@@ -26,7 +26,7 @@
       <input
         type="text"
         v-model="searchTerm"
-        placeholder="Mulkdor, Do'kon/Rasta raqami, yoki Payme ID bo'yicha qidirish..."
+        placeholder="Mulkdor, Do'kon/Rasta raqami bo'yicha qidirish..."
       />
     </div>
 
@@ -44,7 +44,9 @@
             <tr>
               <th>Obyekt</th>
               <th>Mulkdor</th>
-              <th>Status</th>
+              <th>Ijara Statusi</th>
+              <th>To'lov Holati</th>
+              <!-- NEW COLUMN -->
               <th>Ijara Muddati</th>
               <th>Amallar</th>
             </tr>
@@ -65,23 +67,33 @@
                   {{ lease.isActive ? 'Aktiv' : 'Aktiv Emas' }}
                 </span>
               </td>
+              <!-- NEW CELL FOR PAYMENT STATUS -->
+              <td>
+                <span
+                  v-if="lease.isActive"
+                  :class="[
+                    'payment-status-badge',
+                    getPaymentStatusClass(lease.paymentStatus)
+                  ]"
+                >
+                  {{ getPaymentStatusText(lease.paymentStatus) }}
+                </span>
+                <span v-else class="text-muted">--</span>
+              </td>
               <td>
                 <span :class="['duration-badge', getDurationInfo(lease).class]">
                   {{ getDurationInfo(lease).text }}
                 </span>
               </td>
               <td class="actions">
-                <!-- Show QR Code button ONLY for ACTIVE leases -->
                 <button
                   v-if="lease.isActive"
-                  class="btn-icon btn-qr"
-                  title="QR Code"
-                  @click="showQrCodeModal(lease)"
+                  class="btn btn-sm btn-pay"
+                  title="To'lov sahifasiga o'tish"
+                  @click="goToPaymentPage(lease)"
                 >
-                  <i class="fa-solid fa-qrcode"></i>
+                  To'lash
                 </button>
-
-                <!-- The Edit button is always available -->
                 <button
                   class="btn-icon btn-edit"
                   title="Tahrirlash"
@@ -89,7 +101,6 @@
                 >
                   <i class="fa-solid fa-pen-to-square"></i>
                 </button>
-
                 <button
                   v-if="lease.isActive"
                   class="btn-icon btn-archive"
@@ -111,7 +122,7 @@
           </tbody>
           <tbody v-else>
             <tr>
-              <td colspan="5" class="text-center">Ijaralar topilmadi.</td>
+              <td colspan="6" class="text-center">Ijaralar topilmadi.</td>
             </tr>
           </tbody>
         </table>
@@ -120,6 +131,7 @@
       <Pagination :meta="paginationMeta" @page-change="handlePageChange" />
     </div>
 
+    <!-- MODALS -->
     <Modal v-if="isModalVisible" @close="closeModal">
       <template #header
         ><h2>
@@ -139,13 +151,6 @@
         </button>
       </template>
     </Modal>
-
-    <Modal v-if="isQrModalVisible" @close="closeQrCodeModal">
-      <template #header><h2>QR Kod</h2></template>
-      <template #body
-        ><QRCodeGenerator v-if="selectedLease" :lease="selectedLease" />
-      </template>
-    </Modal>
   </div>
 </template>
 
@@ -154,12 +159,16 @@ import { leaseService } from '@/services/api'
 import Modal from '@/components/Modal.vue'
 import LeaseForm from '@/components/forms/LeaseForm.vue'
 import AuthService from '@/services/auth'
-import QRCodeGenerator from '@/components/QRCodeGen.vue'
+import { useToast } from 'vue-toastification'
 import Pagination from '@/components/Pagination.vue'
 
 export default {
   name: 'LeasesView',
-  components: { Modal, LeaseForm, QRCodeGenerator, Pagination },
+  components: { Modal, LeaseForm, Pagination },
+  setup() {
+    const toast = useToast()
+    return { toast }
+  },
   data() {
     return {
       leases: [],
@@ -168,12 +177,9 @@ export default {
       isModalVisible: false,
       editingLease: null,
       userRole: null,
-      isQrModalVisible: false,
-      selectedLease: null,
       searchTerm: '',
       debounceTimer: null,
       activeTab: 'active',
-
       paginationMeta: {
         total: 0,
         page: 1,
@@ -210,11 +216,32 @@ export default {
         this.isLoading = false
       }
     },
+
+    getPaymentStatusClass(status) {
+      const classMap = {
+        PAID: 'status-paid',
+        DUE: 'status-due',
+        UNPAID: 'status-unpaid'
+      }
+      return classMap[status] || ''
+    },
+    getPaymentStatusText(status) {
+      const textMap = {
+        PAID: "To'langan",
+        DUE: 'Yaqinlashmoqda',
+        UNPAID: "To'lanmagan"
+      }
+      return textMap[status] || "Noma'lum"
+    },
+
     handlePageChange(newPage) {
       this.paginationMeta.page = newPage
       this.fetchLeases()
     },
-
+    goToPaymentPage(lease) {
+      const paymentUrl = `/pay/lease/${lease.id}`
+      window.open(this.$router.resolve(paymentUrl).href, '_blank')
+    },
     changeTab(tabName) {
       this.activeTab = tabName
       this.paginationMeta.page = 1
@@ -224,42 +251,27 @@ export default {
       return lease.store?.storeNumber || lease.stall?.stallNumber || "Noma'lum"
     },
     getDurationInfo(lease) {
-      if (!lease.expiryDate) {
+      if (!lease.expiryDate)
         return { text: 'Muddatsiz', class: 'duration-indefinite' }
-      }
-
       const now = new Date()
       const expiryDate = new Date(lease.expiryDate)
-
-      // Reset time to midnight to compare dates only
       now.setHours(0, 0, 0, 0)
       expiryDate.setHours(0, 0, 0, 0)
-
       const diffTime = expiryDate - now
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-      if (!lease.isActive) {
+      if (!lease.isActive)
         return { text: 'Arxivlangan', class: 'duration-archived' }
-      }
-
-      if (diffDays < 0) {
+      if (diffDays < 0)
         return {
           text: `Muddati o'tgan (${Math.abs(diffDays)} kun)`,
           class: 'duration-expired'
         }
-      }
-
-      if (diffDays === 0) {
+      if (diffDays === 0)
         return { text: 'Bugun tugaydi', class: 'duration-ending-soon' }
-      }
-
-      if (diffDays <= 30) {
+      if (diffDays <= 30)
         return { text: `${diffDays} kun qoldi`, class: 'duration-ending-soon' }
-      }
-
       return { text: `${diffDays} kun qoldi`, class: 'duration-normal' }
     },
-
     openAddModal() {
       this.editingLease = null
       this.isModalVisible = true
@@ -287,34 +299,39 @@ export default {
         await leaseService.createLease(formData)
         this.closeModal()
         await this.fetchLeases()
-        alert("Ijara muvaffaqiyatli qo'shildi!")
+        this.toast.success("Ijara muvaffaqiyatli qo'shildi!")
       } catch (err) {
-        alert(err.response?.data?.error || 'Ijara yaratishda xatolik.')
+        const errorMessage =
+          err.response?.data?.error || 'Ijara yaratishda xatolik yuz berdi.'
+        this.toast.error(errorMessage)
       }
     },
+
     async handleUpdateLease(formData) {
       try {
         await leaseService.updateLease(this.editingLease.id, formData)
         this.closeModal()
         await this.fetchLeases()
-        alert("Ijara ma'lumotlari yangilandi!")
+        this.toast.success("Ijara ma'lumotlari muvaffaqiyatli yangilandi!")
       } catch (err) {
-        alert(err.response?.data?.error || 'Ijarani yangilashda xatolik.')
+        const errorMessage =
+          err.response?.data?.error || 'Ijarani yangilashda xatolik yuz berdi.'
+        this.toast.error(errorMessage)
       }
     },
     async handleArchiveLease(lease) {
       if (
         confirm(
-          `Haqiqatan ham "${this.getAssetName(lease)}" obyekti ijara shartnomasini arxivga jo'natmoqchimisiz?`
+          `Haqiqatan ham "${this.getAssetName(lease)}" shartnomasini arxivga jo'natmoqchimisiz?`
         )
       ) {
         try {
           await leaseService.archiveLease(lease.id)
           await this.fetchLeases()
-          alert("Ijara arxivga jo'natildi.")
+          this.toast.success("Ijara arxivga jo'natildi.")
         } catch (err) {
-          alert(
-            err.response?.data?.error || "Ijarani arxivga jo'natishda xatolik."
+          this.toast.error(
+            err.response?.data?.error || 'Ijarani arxivlashda xatolik.'
           )
         }
       }
@@ -322,30 +339,29 @@ export default {
     async handleActivateLease(lease) {
       if (
         confirm(
-          `Haqiqatan ham "${this.getAssetName(lease)}" obyekti ijara shartnomasini arxivdan chiqarmoqchimisiz?`
+          `Haqiqatan ham "${this.getAssetName(lease)}" shartnomasini arxivdan chiqarmoqchimisiz?`
         )
       ) {
         try {
           await leaseService.activateLease(lease.id)
           await this.fetchLeases()
-          alert('Ijara shartnomasi qayta aktivlashtirildi.')
+          this.toast.success('Ijara qayta aktivlashtirildi.')
         } catch (err) {
-          alert(
+          this.toast.error(
             err.response?.data?.error || 'Ijarani aktivlashtirishda xatolik.'
           )
         }
       }
-    },
-
-    showQrCodeModal(lease) {
-      this.selectedLease = lease
-      this.isQrModalVisible = true
-    },
-    closeQrCodeModal() {
-      this.isQrModalVisible = false
-      this.selectedLease = null
     }
   },
+  created() {
+    const user = AuthService.getUser()
+    if (user) {
+      this.userRole = user.role
+    }
+    this.fetchLeases()
+  },
+
   created() {
     const user = AuthService.getUser()
     if (user) {
@@ -496,6 +512,26 @@ h1 {
 .status-inactive {
   background-color: #7f8c8d; /* Gray */
 }
+.payment-status-badge {
+  padding: 0.3rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+}
+.status-paid {
+  background-color: #27ae60; /* Green */
+}
+.status-due {
+  background-color: #f39c12; /* Yellow/Orange */
+}
+.status-unpaid {
+  background-color: #e74c3c; /* Red */
+}
+.text-muted {
+  color: #95a5a6;
+}
 
 /* --- Action Buttons --- */
 .actions {
@@ -522,11 +558,11 @@ h1 {
   background-color: #eaf2f8;
 }
 
-.btn-qr {
-  color: #2c3e50; /* Dark Gray */
+.btn-pay {
+  color: #16a085; /* A teal color */
 }
-.btn-qr:hover {
-  background-color: #ecf0f1;
+.btn-pay:hover {
+  background-color: #d1f2eb;
 }
 
 .btn-archive {

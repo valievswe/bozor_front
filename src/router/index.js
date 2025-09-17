@@ -12,6 +12,8 @@ import StallsView from '../views/manage/StallsView.vue'
 import UsersView from '../views/manage/UsersView.vue'
 import TransactionsView from '../views/manage/TransactionsView.vue'
 import HomeView from '../views/public/HomeView.vue'
+import PaymentIdView from '../views/public/PaymentIdView.vue'
+import PaymentSelectView from '../views/public/PaymentSelectView.vue'
 import PublicPaymentView from '../views/public/PublicPaymentView.vue'
 
 const routes = [
@@ -26,6 +28,17 @@ const routes = [
     path: '/login',
     name: 'login',
     component: LoginView
+  },
+
+  {
+    path: '/pay',
+    name: 'PaymentId',
+    component: PaymentIdView
+  },
+  {
+    path: '/pay/select',
+    name: 'PaymentSelect',
+    component: PaymentSelectView
   },
   {
     path: '/pay/lease/:leaseId',

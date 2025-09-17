@@ -30,10 +30,8 @@ export default {
   },
   computed: {
     paymentUrl() {
-      // This URL should point to your public-facing payment page.
-      // You will pass the lease ID to it.
-      // Example: http://your-domain.com/pay/123
-      return `${window.location.origin}/pay/${this.lease.id}`
+      // Example: http://your-domain.com/pay/lease/123
+      return `${window.location.origin}/pay/lease/${this.lease.id}`
     },
     assetName() {
       return (

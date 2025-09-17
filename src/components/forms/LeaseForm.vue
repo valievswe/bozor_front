@@ -34,33 +34,34 @@
       </div>
     </div>
 
-    <!-- Store/Stall Selection -->
     <div v-if="assetType === 'store'" class="form-group">
       <label for="storeId">Bo'sh Do'konni Tanlang *</label>
-      <select id="storeId" v-model="form.storeId" required>
-        <option :value="null" disabled>Do'konni tanlang...</option>
-        <option
-          v-for="store in availableStores"
-          :key="store.id"
-          :value="store.id"
-        >
-          {{ store.storeNumber }} ({{ store.area }} m²)
-        </option>
-      </select>
+      <SearchableSelect
+        :api-service="searchAvailableStores"
+        placeholder="Do'kon raqami bo'yicha qidiring..."
+        @select="onStoreSelect"
+        :initial-text="editingStoreName"
+        ref="storeSearchableSelect"
+      >
+        <template #item="{ item }">
+          <div>{{ item.storeNumber }} ({{ item.area }} m²)</div>
+        </template>
+      </SearchableSelect>
     </div>
 
     <div v-if="assetType === 'stall'" class="form-group">
       <label for="stallId">Bo'sh Rastani Tanlang *</label>
-      <select id="stallId" v-model="form.stallId" required>
-        <option :value="null" disabled>Rastani tanlang...</option>
-        <option
-          v-for="stall in availableStalls"
-          :key="stall.id"
-          :value="stall.id"
-        >
-          {{ stall.stallNumber }} ({{ stall.area }} m²)
-        </option>
-      </select>
+      <SearchableSelect
+        :api-service="searchAvailableStalls"
+        placeholder="Rasta raqami bo'yicha qidiring..."
+        @select="onStallSelect"
+        :initial-text="editingStallName"
+        ref="stallSearchableSelect"
+      >
+        <template #item="{ item }">
+          <div>{{ item.stallNumber }} ({{ item.area }} m²)</div>
+        </template>
+      </SearchableSelect>
     </div>
 
     <hr class="form-divider" />
@@ -138,38 +139,32 @@ export default {
         expiryDate: null
       },
       assetType: 'store',
-      stores: [],
-      stalls: [],
 
-      editingOwnerName: ''
+      editingOwnerName: '',
+      editingStoreName: '',
+      editingStallName: ''
     }
   },
-  computed: {
-    availableStores() {
-      return this.stores.filter(
-        s => s.status === "Bo'sh" || s.id === this.initialData?.storeId
-      )
-    },
-    availableStalls() {
-      return this.stalls.filter(
-        s => s.status === "Bo'sh" || s.id === this.initialData?.stallId
-      )
-    }
-  },
+
   watch: {
     assetType(newType) {
       if (newType === 'store') {
         this.form.stallId = null
-        this.form.stallMonthlyFee = 0
+        this.editingStallName = ''
+        if (this.$refs.stallSearchableSelect) {
+          this.$refs.stallSearchableSelect.searchTerm = ''
+        }
       } else {
         this.form.storeId = null
-        this.form.shopMonthlyFee = 0
+        this.editingStoreName = ''
+        if (this.$refs.storeSearchableSelect) {
+          this.$refs.storeSearchableSelect.searchTerm = ''
+        }
       }
     },
     initialData: {
       handler(newData) {
         this.resetForm()
-
         if (newData) {
           this.form = {
             ownerId: newData.ownerId,
@@ -187,9 +182,9 @@ export default {
               : null
           }
 
-          if (newData.owner && newData.owner.fullName) {
-            this.editingOwnerName = newData.owner.fullName
-          }
+          if (newData.owner) this.editingOwnerName = newData.owner.fullName
+          if (newData.store) this.editingStoreName = newData.store.storeNumber
+          if (newData.stall) this.editingStallName = newData.stall.stallNumber
 
           if (newData.storeId) this.assetType = 'store'
           if (newData.stallId) this.assetType = 'stall'
@@ -205,6 +200,29 @@ export default {
     onOwnerSelect(owner) {
       this.form.ownerId = owner.id
       this.editingOwnerName = owner.fullName
+    },
+    async searchAvailableStores(searchTerm) {
+      const response = await storeService.getAllStores(searchTerm)
+      // Filter for vacant stores, but always include the one being edited
+      response.data = response.data.filter(
+        s => s.status === "Bo'sh" || s.id === this.form.storeId
+      )
+      return response
+    },
+    onStoreSelect(store) {
+      this.form.storeId = store.id
+      this.editingStoreName = store.storeNumber
+    },
+    async searchAvailableStalls(searchTerm) {
+      const response = await stallService.getAllStalls(searchTerm)
+      response.data = response.data.filter(
+        s => s.status === "Bo'sh" || s.id === this.form.stallId
+      )
+      return response
+    },
+    onStallSelect(stall) {
+      this.form.stallId = stall.id
+      this.editingStallName = stall.stallNumber
     },
     submitForm() {
       const formData = { ...this.form }
@@ -230,23 +248,9 @@ export default {
       }
       this.assetType = 'store'
       this.editingOwnerName = ''
-    },
-    async loadDependencies() {
-      try {
-        const [storesRes, stallsRes] = await Promise.all([
-          storeService.getAllStores(),
-          stallService.getAllStalls()
-        ])
-        this.stores = storesRes.data
-        this.stalls = stallsRes.data
-      } catch (error) {
-        console.error('Failed to load lease form dependencies:', error)
-        alert("Formani yuklash uchun kerakli ma'lumotlarni olib bo'lmadi.")
-      }
+      this.editingStoreName = ''
+      this.editingStallName = ''
     }
-  },
-  created() {
-    this.loadDependencies()
   }
 }
 </script>
@@ -319,14 +323,12 @@ select:focus {
   margin: 0.5rem 0;
 }
 
-/* --- SearchableSelect Component Specific Styling --- */
-/* This targets the component via a deep selector to style its internal elements */
-:deep(.searchable-select) {
+.searchable-select {
   position: relative;
 }
 
-:deep(.searchable-select input) {
-  padding-right: 30px; /* Make space for the spinner */
+.searchable-select input {
+  padding-right: 30px;
 }
 
 :deep(.searchable-select .spinner) {
