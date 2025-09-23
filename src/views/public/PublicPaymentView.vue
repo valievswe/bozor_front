@@ -22,7 +22,7 @@
         <div class="card-body">
           <div class="info-row">
             <span>Tadbirkor:</span>
-            <strong>{{ lease.ownerName }}</strong>
+            <strong>{{ ownerName }}</strong>
           </div>
           <div class="info-row">
             <span>Obyekt:</span>
@@ -87,6 +87,9 @@ export default {
       return (
         this.lease.storeNumber || this.lease.stallNumber || "Noma'lum Obyekt"
       )
+    },
+    ownerName() {
+      return this.lease?.owner?.fullName || "Noma'lum Mulkdor"
     }
   },
   methods: {
@@ -112,6 +115,9 @@ export default {
           leaseId: parseInt(this.leaseId, 10),
           amount: this.lease.totalFee
         }
+
+        console.log('Initiating payment with payload:', payload)
+
         const response = await paymentService.initiatePayment(payload)
 
         this.toast.info("Payme sahifasiga yo'naltirilmoqda...")
@@ -133,6 +139,7 @@ export default {
   }
 }
 </script>
+
 <style scoped>
 .payment-container {
   display: flex;
