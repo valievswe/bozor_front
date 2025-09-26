@@ -72,8 +72,12 @@ export const ownerService = {
 // All functions related to stores
 export const storeService = {
   // GET /api/stores
-  getAllStores(searchTerm) {
-    return apiClient.get('/stores', { params: { search: searchTerm } })
+  getAllStores(searchTerm, page = 1, limit = 10) {
+    const params = { page, limit }
+    if (searchTerm) {
+      params.search = searchTerm
+    }
+    return apiClient.get('/stores', { params })
   },
 
   // POST /api/stores
@@ -190,16 +194,19 @@ export const paymentService = {
 
 // --- TRANSACTION SERVICE ---
 export const transactionService = {
-  // PROTECTED: Get all transactions for the admin panel
   getAllTransactions(searchTerm, status, page) {
     const params = { page }
     if (searchTerm) params.search = searchTerm
     if (status) params.status = status
     return apiClient.get('/transactions', { params })
   },
-  // PROTECTED: Get a single transaction by ID
+
   getTransactionById(id) {
     return apiClient.get(`/transactions/${id}`)
+  },
+
+  createManual(transactionData) {
+    return apiClient.post('/transactions/manual', transactionData)
   }
 }
 
@@ -221,5 +228,28 @@ export const reportService = {
 export const exportService = {
   exportLeases() {
     return apiClient.get('/export/leases', { responseType: 'blob' })
+  }
+}
+
+// --- ATTENDANCE SERVICE ---
+export const attendanceService = {
+  /**
+   * @description Gets all absence records for a lease in a given month.
+   * @param {number} leaseId
+   * @param {number} year
+   * @param {number} month (1-12)
+   */
+  getAbsences(leaseId, year, month) {
+    return apiClient.get('/attendance', { params: { leaseId, year, month } })
+  },
+
+  /**
+   * @description Sets the attendance status for a lease on a specific date.
+   * @param {number} leaseId
+   * @param {string} date ('YYYY-MM-DD')
+   * @param {boolean} isPresent
+   */
+  setStatus(leaseId, date, isPresent) {
+    return apiClient.post('/attendance', { leaseId, date, isPresent })
   }
 }

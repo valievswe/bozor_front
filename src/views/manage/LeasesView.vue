@@ -2,7 +2,8 @@
   <div class="leases-view">
     <header class="view-header">
       <h1>Ijaralarni Boshqarish</h1>
-      <button class="btn btn-primary" @click="openAddModal">
+      <button class="btn btn-primary" @click="openLeaseModal(null)">
+        <!-- Simplified open -->
         <span class="icon">+</span> Yangi Ijara Qo'shish
       </button>
     </header>
@@ -37,7 +38,6 @@
       <div v-else-if="error" class="error-message">
         <p>Xatolik yuz berdi: {{ error }}</p>
       </div>
-
       <div v-else class="table-container">
         <table class="data-table">
           <thead>
@@ -46,7 +46,6 @@
               <th>Mulkdor</th>
               <th>Ijara Statusi</th>
               <th>To'lov Holati</th>
-              <!-- NEW COLUMN -->
               <th>Ijara Muddati</th>
               <th>Amallar</th>
             </tr>
@@ -67,7 +66,6 @@
                   {{ lease.isActive ? 'Aktiv' : 'Aktiv Emas' }}
                 </span>
               </td>
-              <!-- NEW CELL FOR PAYMENT STATUS -->
               <td>
                 <span
                   v-if="lease.isActive"
@@ -81,9 +79,10 @@
                 <span v-else class="text-muted">--</span>
               </td>
               <td>
-                <span :class="['duration-badge', getDurationInfo(lease).class]">
-                  {{ getDurationInfo(lease).text }}
-                </span>
+                <span
+                  :class="['duration-badge', getDurationInfo(lease).class]"
+                  >{{ getDurationInfo(lease).text }}</span
+                >
               </td>
               <td class="actions">
                 <button
@@ -92,12 +91,12 @@
                   title="To'lov sahifasiga o'tish"
                   @click="goToPaymentPage(lease)"
                 >
-                  To'lash
+                  Payme kirim
                 </button>
                 <button
                   class="btn-icon btn-edit"
                   title="Tahrirlash"
-                  @click="openEditModal(lease)"
+                  @click="openLeaseModal(lease)"
                 >
                   <i class="fa-solid fa-pen-to-square"></i>
                 </button>
@@ -117,6 +116,27 @@
                 >
                   <i class="fa-solid fa-arrow-rotate-left"></i>
                 </button>
+                <button
+                  v-if="
+                    lease.isActive &&
+                    (lease.paymentStatus === 'UNPAID' ||
+                      lease.paymentStatus === 'DUE')
+                  "
+                  @click="openPaymentModal(lease)"
+                  class="btn btn-sm btn-pay"
+                  title="To'lov kiritish"
+                >
+                  Boshqa Kirim
+                </button>
+                <button
+                  v-if="lease.isActive && lease.paymentInterval === 'DAILY'"
+                  @click="openAttendanceModal(lease)"
+                  class="btn-icon btn-calendar"
+                  title="Davomatni boshqarish"
+                >
+                  Davomat
+                  <i class="fa-solid fa-calendar-days"></i>
+                </button>
               </td>
             </tr>
           </tbody>
@@ -127,12 +147,12 @@
           </tbody>
         </table>
       </div>
-
       <Pagination :meta="paginationMeta" @page-change="handlePageChange" />
     </div>
 
-    <!-- MODALS -->
-    <Modal v-if="isModalVisible" @close="closeModal">
+    <!-- MODAL FOR LEASE FORM (CREATE/EDIT) -->
+    <!-- --- THIS IS THE FIX --- -->
+    <Modal v-if="isLeaseModalVisible" @close="closeLeaseModal">
       <template #header
         ><h2>
           {{ editingLease ? 'Ijarani Tahrirlash' : "Yangi Ijara Qo'shish" }}
@@ -145,12 +165,30 @@
           @submit="handleFormSubmit"
       /></template>
       <template #footer>
-        <button class="btn btn-secondary" @click="closeModal">Yopish</button>
+        <button class="btn btn-secondary" @click="closeLeaseModal">
+          Yopish
+        </button>
         <button class="btn btn-primary" @click="submitLeaseForm">
           Saqlash
         </button>
       </template>
     </Modal>
+    <!-- --- END OF FIX --- -->
+
+    <!-- MODAL FOR MANUAL PAYMENT -->
+    <ManualPaymentModal
+      v-if="isPaymentModalVisible"
+      :lease="selectedLeaseForPayment"
+      @close="closePaymentModal"
+      @payment-success="handlePaymentSuccess"
+    />
+
+    <AttendanceModal
+      v-if="isAttendanceModalVisible"
+      :lease="selectedLeaseForAttendance"
+      @close="closeAttendanceModal"
+      @updated="fetchLeases"
+    />
   </div>
 </template>
 
@@ -158,13 +196,21 @@
 import { leaseService } from '@/services/api'
 import Modal from '@/components/Modal.vue'
 import LeaseForm from '@/components/forms/LeaseForm.vue'
+import ManualPaymentModal from '@/components/ManualPaymentModal.vue'
 import AuthService from '@/services/auth'
 import { useToast } from 'vue-toastification'
 import Pagination from '@/components/Pagination.vue'
+import AttendanceModal from '@/components/AttendanceModal.vue'
 
 export default {
   name: 'LeasesView',
-  components: { Modal, LeaseForm, Pagination },
+  components: {
+    Modal,
+    LeaseForm,
+    Pagination,
+    ManualPaymentModal,
+    AttendanceModal
+  },
   setup() {
     const toast = useToast()
     return { toast }
@@ -174,18 +220,17 @@ export default {
       leases: [],
       isLoading: false,
       error: null,
-      isModalVisible: false,
+      isLeaseModalVisible: false, // For the LeaseForm
+      isPaymentModalVisible: false, // For the ManualPaymentModal
+      isAttendanceModalVisible: false,
+      selectedLeaseForAttendance: null,
       editingLease: null,
+      selectedLeaseForPayment: null,
       userRole: null,
       searchTerm: '',
       debounceTimer: null,
       activeTab: 'active',
-      paginationMeta: {
-        total: 0,
-        page: 1,
-        limit: 10,
-        totalPages: 1
-      }
+      paginationMeta: { total: 0, page: 1, limit: 10, totalPages: 1 }
     }
   },
   watch: {
@@ -202,12 +247,12 @@ export default {
       this.isLoading = true
       this.error = null
       try {
-        const response = await leaseService.getAllLeases(
-          this.searchTerm,
-          this.activeTab,
-          this.paginationMeta.page,
-          this.paginationMeta.limit
-        )
+        const response = await leaseService.getAllLeases({
+          search: this.searchTerm,
+          status: this.activeTab,
+          page: this.paginationMeta.page,
+          limit: this.paginationMeta.limit
+        })
         this.leases = response.data.data
         this.paginationMeta = response.data.meta
       } catch (err) {
@@ -216,7 +261,6 @@ export default {
         this.isLoading = false
       }
     },
-
     getPaymentStatusClass(status) {
       const classMap = {
         PAID: 'status-paid',
@@ -233,7 +277,6 @@ export default {
       }
       return textMap[status] || "Noma'lum"
     },
-
     handlePageChange(newPage) {
       this.paginationMeta.page = newPage
       this.fetchLeases()
@@ -272,18 +315,42 @@ export default {
         return { text: `${diffDays} kun qoldi`, class: 'duration-ending-soon' }
       return { text: `${diffDays} kun qoldi`, class: 'duration-normal' }
     },
-    openAddModal() {
+
+    // --- MODAL CONTROL METHODS ---
+    openLeaseModal(lease) {
+      // Handles both Add and Edit
+      this.editingLease = lease ? { ...lease } : null
+      this.isLeaseModalVisible = true
+    },
+    closeLeaseModal() {
+      this.isLeaseModalVisible = false
       this.editingLease = null
-      this.isModalVisible = true
     },
-    openEditModal(lease) {
-      this.editingLease = { ...lease }
-      this.isModalVisible = true
+    openPaymentModal(lease) {
+      this.selectedLeaseForPayment = lease
+      this.isPaymentModalVisible = true
     },
-    closeModal() {
-      this.isModalVisible = false
-      this.editingLease = null
+    closePaymentModal() {
+      this.isPaymentModalVisible = false
+      this.selectedLeaseForPayment = null
     },
+    handlePaymentSuccess() {
+      this.closePaymentModal()
+      this.toast.success("To'lov muvaffaqiyatli saqlandi!")
+      this.fetchLeases()
+    },
+
+    openAttendanceModal(lease) {
+      this.selectedLeaseForAttendance = lease
+      this.isAttendanceModalVisible = true
+    },
+
+    closeAttendanceModal() {
+      this.isAttendanceModalVisible = false
+      this.selectedLeaseForAttendance = null
+    },
+
+    // --- FORM SUBMISSION ---
     submitLeaseForm() {
       this.$refs.leaseForm.submitForm()
     },
@@ -294,10 +361,12 @@ export default {
         this.handleCreateLease(formData)
       }
     },
+
+    // --- CRUD METHODS ---
     async handleCreateLease(formData) {
       try {
         await leaseService.createLease(formData)
-        this.closeModal()
+        this.closeLeaseModal()
         await this.fetchLeases()
         this.toast.success("Ijara muvaffaqiyatli qo'shildi!")
       } catch (err) {
@@ -306,11 +375,10 @@ export default {
         this.toast.error(errorMessage)
       }
     },
-
     async handleUpdateLease(formData) {
       try {
         await leaseService.updateLease(this.editingLease.id, formData)
-        this.closeModal()
+        this.closeLeaseModal()
         await this.fetchLeases()
         this.toast.success("Ijara ma'lumotlari muvaffaqiyatli yangilandi!")
       } catch (err) {
@@ -326,7 +394,7 @@ export default {
         )
       ) {
         try {
-          await leaseService.archiveLease(lease.id)
+          await leaseService.deactivateLease(lease.id) // Assuming the service is named deactivateLease
           await this.fetchLeases()
           this.toast.success("Ijara arxivga jo'natildi.")
         } catch (err) {
@@ -357,15 +425,7 @@ export default {
   created() {
     const user = AuthService.getUser()
     if (user) {
-      this.userRole = user.role
-    }
-    this.fetchLeases()
-  },
-
-  created() {
-    const user = AuthService.getUser()
-    if (user) {
-      this.userRole = user.role
+      this.userRole = user.role.name // Assuming role is an object with a name property
     }
     this.fetchLeases()
   }

@@ -4,9 +4,11 @@
     <div class="form-group">
       <label for="ownerId">Tadbirkor (Mulkdor) *</label>
       <SearchableSelect
-        :api-service="searchOwners"
+        :items="availableOwners"
+        :is-loading="isSearchingOwners"
         placeholder="Tadbirkor ismi yoki STIR bo'yicha qidiring..."
         @select="onOwnerSelect"
+        @search="searchOwners"
         :initial-text="editingOwnerName"
       >
         <template #item="{ item }">
@@ -34,12 +36,15 @@
       </div>
     </div>
 
+    <!-- Store Selection -->
     <div v-if="assetType === 'store'" class="form-group">
       <label for="storeId">Bo'sh Do'konni Tanlang *</label>
       <SearchableSelect
-        :api-service="searchAvailableStores"
+        :items="availableStores"
+        :is-loading="isSearchingStores"
         placeholder="Do'kon raqami bo'yicha qidiring..."
         @select="onStoreSelect"
+        @search="searchAvailableStores"
         :initial-text="editingStoreName"
         ref="storeSearchableSelect"
       >
@@ -49,12 +54,15 @@
       </SearchableSelect>
     </div>
 
+    <!-- Stall Selection -->
     <div v-if="assetType === 'stall'" class="form-group">
       <label for="stallId">Bo'sh Rastani Tanlang *</label>
       <SearchableSelect
-        :api-service="searchAvailableStalls"
+        :items="availableStalls"
+        :is-loading="isSearchingStalls"
         placeholder="Rasta raqami bo'yicha qidiring..."
         @select="onStallSelect"
+        @search="searchAvailableStalls"
         :initial-text="editingStallName"
         ref="stallSearchableSelect"
       >
@@ -69,11 +77,19 @@
     <!-- Lease Details -->
     <div class="form-grid">
       <div class="form-group">
+        <label for="paymentInterval">To'lov Jadvali *</label>
+        <select id="paymentInterval" v-model="form.paymentInterval">
+          <option value="MONTHLY">Oylik</option>
+          <option value="DAILY">Kunlik</option>
+        </select>
+      </div>
+
+      <div class="form-group">
         <label v-if="assetType === 'store'" for="shopMonthlyFee"
-          >Do'kon Oylik To'lovi (so'm)</label
+          >Do'kon To'lovi (so'm)</label
         >
         <label v-if="assetType === 'stall'" for="stallMonthlyFee"
-          >Rasta Oylik To'lovi (so'm)</label
+          >Rasta To'lovi (so'm)</label
         >
         <input
           v-if="assetType === 'store'"
@@ -88,10 +104,12 @@
           type="number"
         />
       </div>
+
       <div class="form-group">
         <label for="guardFee">Qo'riqlash To'lovi (so'm)</label>
         <input id="guardFee" v-model.number="form.guardFee" type="number" />
       </div>
+
       <div class="form-group">
         <label for="certificateNumber">Guvohnoma Raqami</label>
         <input
@@ -111,6 +129,7 @@
     </div>
   </form>
 </template>
+
 <script>
 import { ownerService, storeService, stallService } from '@/services/api'
 import SearchableSelect from './SearchableSelect.vue'
@@ -136,10 +155,16 @@ export default {
         guardFee: 0,
         certificateNumber: '',
         issueDate: null,
-        expiryDate: null
+        expiryDate: null,
+        paymentInterval: 'MONTHLY'
       },
       assetType: 'store',
-
+      availableOwners: [],
+      isSearchingOwners: false,
+      availableStores: [],
+      isSearchingStores: false,
+      availableStalls: [],
+      isSearchingStalls: false,
       editingOwnerName: '',
       editingStoreName: '',
       editingStallName: ''
@@ -179,13 +204,14 @@ export default {
               : null,
             expiryDate: newData.expiryDate
               ? newData.expiryDate.split('T')[0]
-              : null
+              : null,
+            // --- THIS IS THE FIX ---
+            paymentInterval: newData.paymentInterval || 'MONTHLY'
           }
 
           if (newData.owner) this.editingOwnerName = newData.owner.fullName
           if (newData.store) this.editingStoreName = newData.store.storeNumber
           if (newData.stall) this.editingStallName = newData.stall.stallNumber
-
           if (newData.storeId) this.assetType = 'store'
           if (newData.stallId) this.assetType = 'stall'
         }
@@ -194,36 +220,101 @@ export default {
     }
   },
   methods: {
-    searchOwners(searchTerm) {
-      return ownerService.getAllOwners(searchTerm)
+    // --- OWNER SEARCH ---
+    async searchOwners(searchTerm) {
+      if (!searchTerm) {
+        this.availableOwners = []
+        return
+      }
+      this.isSearchingOwners = true
+      try {
+        const response = await ownerService.getAllOwners({
+          search: searchTerm,
+          limit: 50
+        })
+        console.log('API Response for Owners:', response)
+
+        this.availableOwners = response.data
+      } catch (error) {
+        console.error('Failed to search owners:', error)
+        this.availableOwners = []
+      } finally {
+        this.isSearchingOwners = false
+      }
     },
     onOwnerSelect(owner) {
       this.form.ownerId = owner.id
       this.editingOwnerName = owner.fullName
+      this.availableOwners = []
     },
+
+    // --- STORE SEARCH ---
     async searchAvailableStores(searchTerm) {
-      const response = await storeService.getAllStores(searchTerm)
-      // Filter for vacant stores, but always include the one being edited
-      response.data = response.data.filter(
-        s => s.status === "Bo'sh" || s.id === this.form.storeId
-      )
-      return response
+      if (!searchTerm) {
+        this.availableStores = []
+        return
+      }
+      this.isSearchingStores = true
+      try {
+        const response = await storeService.getAllStores({
+          search: searchTerm,
+          limit: 50
+        })
+        const allStores = response.data.data
+        if (Array.isArray(allStores)) {
+          this.availableStores = allStores.filter(
+            s => s.status === "Bo'sh" || s.id === this.form.storeId
+          )
+        } else {
+          this.availableStores = []
+        }
+      } catch (error) {
+        console.error('Failed to search for stores:', error)
+        this.availableStores = []
+      } finally {
+        this.isSearchingStores = false
+      }
     },
     onStoreSelect(store) {
       this.form.storeId = store.id
       this.editingStoreName = store.storeNumber
+      this.availableStores = []
     },
+
+    // --- STALL SEARCH ---
     async searchAvailableStalls(searchTerm) {
-      const response = await stallService.getAllStalls(searchTerm)
-      response.data = response.data.filter(
-        s => s.status === "Bo'sh" || s.id === this.form.stallId
-      )
-      return response
+      if (!searchTerm) {
+        this.availableStalls = []
+        return
+      }
+      this.isSearchingStalls = true
+      try {
+        const response = await stallService.getAllStalls({
+          search: searchTerm,
+          limit: 50
+        })
+        const allStalls = response.data.data
+        if (Array.isArray(allStalls)) {
+          this.availableStalls = allStalls.filter(
+            s => s.status === "Bo'sh" || s.id === this.form.stallId
+          )
+        } else {
+          this.availableStalls = []
+        }
+      } catch (error) {
+        console.error('Failed to search stalls:', error)
+        this.availableStalls = []
+      } finally {
+        this.isSearchingStalls = false
+      }
     },
     onStallSelect(stall) {
       this.form.stallId = stall.id
       this.editingStallName = stall.stallNumber
+      this.availableStalls = []
     },
+
+    // --- FORM SUBMISSION & RESET ---
     submitForm() {
       const formData = { ...this.form }
       if (!formData.issueDate) formData.issueDate = null
@@ -244,7 +335,9 @@ export default {
         guardFee: 0,
         certificateNumber: '',
         issueDate: null,
-        expiryDate: null
+        expiryDate: null,
+        // --- THIS IS THE FIX ---
+        paymentInterval: 'MONTHLY'
       }
       this.assetType = 'store'
       this.editingOwnerName = ''

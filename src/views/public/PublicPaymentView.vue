@@ -2,16 +2,12 @@
   <div class="payment-container">
     <div class="payment-card">
       <div v-if="isLoading" class="loader">Ma'lumotlar yuklanmoqda...</div>
-      <!-- The error panel is now simplified, as the toast will show the main error -->
       <div v-else-if="error" class="error-panel">
         <div class="error-icon">
           <i class="fas fa-exclamation-triangle"></i>
         </div>
-        <h2>Ma'lumotlarni Yuklab Bo'lmadi</h2>
-        <p>
-          Iltimos, QR kod to'g'riligini tekshiring yoki administratorga murojaat
-          qiling.
-        </p>
+        <h2>Xatolik Yuz Berdi</h2>
+        <p>{{ error }}</p>
         <a href="/" class="home-link">Bosh sahifaga qaytish</a>
       </div>
 
@@ -22,11 +18,11 @@
         <div class="card-body">
           <div class="info-row">
             <span>Tadbirkor:</span>
-            <strong>{{ ownerName }}</strong>
+            <strong>{{ lease.ownerName }}</strong>
           </div>
           <div class="info-row">
             <span>Obyekt:</span>
-            <strong>{{ assetName }}</strong>
+            <strong>{{ lease.storeNumber || lease.stallNumber }}</strong>
           </div>
           <hr />
           <div class="amount-row">
@@ -36,22 +32,35 @@
             >
           </div>
         </div>
+
+        <!-- --- START OF THE FIX --- -->
         <footer class="card-footer">
-          <button
-            @click="handlePayment"
-            class="pay-button"
-            :disabled="isProcessing"
-          >
-            <span v-if="!isProcessing">Payme orqali to'lash</span>
-            <span v-else>Bajarilmoqda...</span>
-          </button>
-          <div class="payme-logo">
-            <img
-              src="https://cdn.paycom.uz/documentation_assets/payme_01.svg"
-              alt="Payme Logo"
-            />
+          <!-- Show this block if the lease is ALREADY PAID -->
+          <div v-if="lease.paymentStatus === 'PAID'" class="status-paid-panel">
+            <div class="paid-icon">✓</div>
+            <h3>To'langan</h3>
+            <p>Joriy davr uchun to'lov qilingan.</p>
+          </div>
+
+          <!-- Show this block if the lease is NOT PAID -->
+          <div v-else>
+            <button
+              @click="handlePayment"
+              class="pay-button"
+              :disabled="isProcessing"
+            >
+              <span v-if="!isProcessing">Payme orqali to'lash</span>
+              <span v-else>Bajarilmoqda...</span>
+            </button>
+            <div class="payme-logo">
+              <img
+                src="https://cdn.paycom.uz/documentation_assets/payme_01.svg"
+                alt="Payme Logo"
+              />
+            </div>
           </div>
         </footer>
+        <!-- --- END OF THE FIX --- -->
       </div>
     </div>
   </div>
@@ -64,10 +73,7 @@ import { useToast } from 'vue-toastification'
 export default {
   name: 'PublicPaymentView',
   props: {
-    leaseId: {
-      type: String,
-      required: true
-    }
+    leaseId: { type: String, required: true }
   },
   setup() {
     const toast = useToast()
@@ -81,25 +87,17 @@ export default {
       error: null
     }
   },
-  computed: {
-    assetName() {
-      if (!this.lease) return ''
-      return (
-        this.lease.storeNumber || this.lease.stallNumber || "Noma'lum Obyekt"
-      )
-    },
-    ownerName() {
-      return this.lease?.owner?.fullName || "Noma'lum Mulkdor"
-    }
-  },
+  // The 'computed' properties are no longer needed as the backend provides the data directly
   methods: {
     async fetchLeaseInfo() {
+      this.isLoading = true
       try {
+        // The service function name should match what's in your api.js
         const response = await paymentService.getPublicLeaseInfo(this.leaseId)
         this.lease = response.data
       } catch (err) {
         const errorMessage =
-          err.response?.data?.message ||
+          err.response?.data?.error ||
           'Ijara shartnomasi topilmadi yoki yaroqsiz.'
         this.error = errorMessage
         this.toast.error(errorMessage)
@@ -115,19 +113,15 @@ export default {
           leaseId: parseInt(this.leaseId, 10),
           amount: this.lease.totalFee
         }
-
-        console.log('Initiating payment with payload:', payload)
-
         const response = await paymentService.initiatePayment(payload)
-
         this.toast.info("Payme sahifasiga yo'naltirilmoqda...")
-
         setTimeout(() => {
           window.location.href = response.data.checkoutUrl
         }, 1500)
       } catch (err) {
+        // The backend now sends a specific error for already-paid leases
         const errorMessage =
-          err.response?.data?.message ||
+          err.response?.data?.error ||
           "To'lovni boshlashda kutilmagan xatolik yuz berdi."
         this.toast.error(errorMessage)
         this.isProcessing = false
@@ -141,6 +135,30 @@ export default {
 </script>
 
 <style scoped>
+.status-paid-panel {
+  text-align: center;
+  padding: 1rem;
+}
+.paid-icon {
+  font-size: 3rem;
+  width: 80px;
+  height: 80px;
+  line-height: 80px;
+  border-radius: 50%;
+  background-color: #27ae60;
+  color: white;
+  margin: 0 auto 1rem;
+}
+.status-paid-panel h3 {
+  margin: 0 0 0.5rem;
+  color: #27ae60;
+  font-size: 1.5rem;
+}
+.status-paid-panel p {
+  margin: 0;
+  color: #555;
+}
+
 .payment-container {
   display: flex;
   justify-content: center;

@@ -26,7 +26,6 @@
 </template>
 
 <script>
-// Directive to detect clicks outside the component
 const vClickOutside = {
   beforeMount(el, binding) {
     el.clickOutsideEvent = function (event) {
@@ -47,17 +46,16 @@ export default {
     clickOutside: vClickOutside
   },
   props: {
-    apiService: { type: Function, required: true },
+    items: { type: Array, required: true },
+    isLoading: { type: Boolean, default: false },
     placeholder: { type: String, default: 'Qidirish...' },
     initialText: { type: String, default: '' }
   },
-  emits: ['select'],
+  emits: ['select', 'search'],
   data() {
     return {
       searchTerm: this.initialText,
-      items: [],
       showDropdown: false,
-      isLoading: false,
       debounceTimer: null
     }
   },
@@ -72,27 +70,12 @@ export default {
       this.showDropdown = true
       clearTimeout(this.debounceTimer)
       this.debounceTimer = setTimeout(() => {
-        this.searchItems()
+        this.$emit('search', this.searchTerm)
       }, 300)
     },
-    async searchItems() {
-      if (!this.searchTerm) {
-        this.items = []
-        return
-      }
-      this.isLoading = true
-      try {
-        const response = await this.apiService(this.searchTerm)
-        this.items = response.data
-      } catch (error) {
-        console.error('Search failed:', error)
-        this.items = []
-      } finally {
-        this.isLoading = false
-      }
-    },
     selectItem(item) {
-      this.searchTerm = item.fullName || item.name
+      this.searchTerm =
+        item.fullName || item.name || item.storeNumber || item.stallNumber
       this.showDropdown = false
       this.$emit('select', item)
     },
@@ -102,7 +85,6 @@ export default {
   }
 }
 </script>
-
 <style scoped>
 .searchable-select {
   position: relative;

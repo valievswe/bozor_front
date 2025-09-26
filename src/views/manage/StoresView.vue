@@ -85,6 +85,8 @@
           </tbody>
         </table>
       </div>
+
+      <Pagination :meta="paginationMeta" @page-change="handlePageChange" />
     </div>
 
     <Modal v-if="isModalVisible" @close="closeModal">
@@ -115,10 +117,12 @@ import { storeService } from '@/services/api'
 import Modal from '@/components/Modal.vue'
 import StoreForm from '@/components/forms/StoreForm.vue'
 import authService from '@/services/auth'
+import Pagination from '@/components/Pagination.vue'
+import { useToast } from 'vue-toastification'
 
 export default {
   name: 'StoresView',
-  components: { Modal, StoreForm },
+  components: { Modal, StoreForm, Pagination },
   data() {
     return {
       stores: [],
@@ -128,13 +132,25 @@ export default {
       editingStore: null,
       searchQuery: '',
       debounceTimer: null,
-      userRole: null
+      userRole: null,
+      paginationMeta: {
+        total: 0,
+        page: 1,
+        limit: 10,
+        totalPages: 1
+      }
     }
+  },
+
+  setup() {
+    const toast = useToast()
+    return { toast }
   },
   watch: {
     searchQuery() {
       clearTimeout(this.debounceTimer)
       this.debounceTimer = setTimeout(() => {
+        this.paginationMeta.page = 1
         this.fetchStores()
       }, 300)
     }
@@ -144,29 +160,45 @@ export default {
       this.isLoading = true
       this.error = null
       try {
-        const response = await storeService.getAllStores(this.searchQuery)
-        this.stores = response.data
+        const response = await storeService.getAllStores(
+          this.searchQuery,
+          this.paginationMeta.page,
+          this.paginationMeta.limit
+        )
+        this.stores = response.data.data
+        this.paginationMeta = response.data.meta
       } catch (err) {
         this.error = "Ma'lumotlarni yuklab bo'lmadi."
+        this.toast.error("Ma'lumotlarni yuklab bo'lmadi.")
       } finally {
         this.isLoading = false
       }
     },
+
+    handlePageChange(newPage) {
+      this.paginationMeta.page = newPage
+      this.fetchStores()
+    },
+
     openAddModal() {
       this.editingStore = null
       this.isModalVisible = true
     },
+
     openEditModal(store) {
       this.editingStore = { ...store }
       this.isModalVisible = true
     },
+
     closeModal() {
       this.isModalVisible = false
       this.editingStore = null
     },
+
     submitStoreForm() {
       this.$refs.storeForm.submitForm()
     },
+
     handleFormSubmit(formData) {
       if (this.editingStore) {
         this.handleUpdateStore(formData)
@@ -174,26 +206,55 @@ export default {
         this.handleCreateStore(formData)
       }
     },
+
     async handleCreateStore(formData) {
       try {
         await storeService.createStore(formData)
         this.closeModal()
-        await this.fetchStores()
-        alert("Do'kon muvaffaqiyatli qo'shildi!")
+        this.fetchStores()
+        this.toast.success("Do'kon muvaffaqiyatli qo'shildi!")
       } catch (err) {
-        alert(err.response?.data?.error || "Do'kon yaratishda xatolik.")
+        console.error('DEBUG: The Create Store error object is:', err)
+        let errorMessage = "Do'kon yaratishda xatolik yuz berdi."
+        if (err.response && err.response.data && err.response.data.message) {
+          errorMessage = err.response.data.message
+        } else if (
+          err.response &&
+          err.response.data &&
+          err.response.data.error
+        ) {
+          errorMessage = err.response.data.error
+        } else if (err.message) {
+          errorMessage = err.message
+        }
+        this.toast.error(errorMessage)
       }
     },
+
     async handleUpdateStore(formData) {
       try {
         await storeService.updateStore(this.editingStore.id, formData)
         this.closeModal()
         await this.fetchStores()
-        alert("Do'kon ma'lumotlari yangilandi!")
+        this.toast.success("Do'kon ma'lumotlari yangilandi!")
       } catch (err) {
-        alert(err.response?.data?.error || "Do'konni yangilashda xatolik.")
+        console.error('DEBUG: The Update Store error object is:', err)
+        let errorMessage = "Do'konni yangilashda xatolik yuz berdi."
+        if (err.response && err.response.data && err.response.data.message) {
+          errorMessage = err.response.data.message
+        } else if (
+          err.response &&
+          err.response.data &&
+          err.response.data.error
+        ) {
+          errorMessage = err.response.data.error
+        } else if (err.message) {
+          errorMessage = err.message
+        }
+        this.toast.error(errorMessage)
       }
     },
+
     async handleDeleteStore(store) {
       if (
         confirm(
@@ -203,9 +264,22 @@ export default {
         try {
           await storeService.deleteStore(store.id)
           await this.fetchStores()
-          alert("Do'kon o'chirildi.")
+          this.toast.success("Do'kon o'chirildi!")
         } catch (err) {
-          alert(err.response?.data?.error || "Do'konni o'chirishda xatolik.")
+          console.error('DEBUG: The Delete Store error object is:', err)
+          let errorMessage = "Do'konni o'chirishda xatolik yuz berdi."
+          if (err.response && err.response.data && err.response.data.message) {
+            errorMessage = err.response.data.message
+          } else if (
+            err.response &&
+            err.response.data &&
+            err.response.data.error
+          ) {
+            errorMessage = err.response.data.error
+          } else if (err.message) {
+            errorMessage = err.message
+          }
+          this.toast.error(errorMessage)
         }
       }
     }
