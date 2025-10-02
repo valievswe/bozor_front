@@ -394,7 +394,7 @@ export default {
         )
       ) {
         try {
-          await leaseService.deactivateLease(lease.id) // Assuming the service is named deactivateLease
+          await leaseService.archiveLease(lease.id)
           await this.fetchLeases()
           this.toast.success("Ijara arxivga jo'natildi.")
         } catch (err) {

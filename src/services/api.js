@@ -189,6 +189,9 @@ export const paymentService = {
   },
   findLeasesByOwner(identifier) {
     return apiClient.post('/payments/public/find-leases', { identifier })
+  },
+  searchPublicLeases(term) {
+    return apiClient.get('/payments/public/search', { params: { term } })
   }
 }
 
