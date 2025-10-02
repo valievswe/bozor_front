@@ -247,12 +247,14 @@ export default {
       this.isLoading = true
       this.error = null
       try {
-        const response = await leaseService.getAllLeases({
+        const params = {
           search: this.searchTerm,
           status: this.activeTab,
           page: this.paginationMeta.page,
           limit: this.paginationMeta.limit
-        })
+        }
+        const response = await leaseService.getAllLeases(params)
+
         this.leases = response.data.data
         this.paginationMeta = response.data.meta
       } catch (err) {
@@ -390,7 +392,9 @@ export default {
     async handleArchiveLease(lease) {
       if (
         confirm(
-          `Haqiqatan ham "${this.getAssetName(lease)}" shartnomasini arxivga jo'natmoqchimisiz?`
+          `Haqiqatan ham "${this.getAssetName(
+            lease
+          )}" shartnomasini arxivga jo'natmoqchimisiz?`
         )
       ) {
         try {
@@ -407,7 +411,9 @@ export default {
     async handleActivateLease(lease) {
       if (
         confirm(
-          `Haqiqatan ham "${this.getAssetName(lease)}" shartnomasini arxivdan chiqarmoqchimisiz?`
+          `Haqiqatan ham "${this.getAssetName(
+            lease
+          )}" shartnomasini arxivdan chiqarmoqchimisiz?`
         )
       ) {
         try {
