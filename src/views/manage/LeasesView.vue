@@ -60,10 +60,10 @@
                 <span
                   :class="[
                     'status-badge',
-                    lease.isActive ? 'status-active' : 'status-inactive'
+                    lease.isActive ? 'status-active' : 'status-inactive',
                   ]"
                 >
-                  {{ lease.isActive ? 'Aktiv' : 'Aktiv Emas' }}
+                  {{ lease.isActive ? "Aktiv" : "Aktiv Emas" }}
                 </span>
               </td>
               <td>
@@ -71,7 +71,7 @@
                   v-if="lease.isActive"
                   :class="[
                     'payment-status-badge',
-                    getPaymentStatusClass(lease.paymentStatus)
+                    getPaymentStatusClass(lease.paymentStatus),
                   ]"
                 >
                   {{ getPaymentStatusText(lease.paymentStatus) }}
@@ -155,7 +155,7 @@
     <Modal v-if="isLeaseModalVisible" @close="closeLeaseModal">
       <template #header
         ><h2>
-          {{ editingLease ? 'Ijarani Tahrirlash' : "Yangi Ijara Qo'shish" }}
+          {{ editingLease ? "Ijarani Tahrirlash" : "Yangi Ijara Qo'shish" }}
         </h2></template
       >
       <template #body
@@ -193,27 +193,27 @@
 </template>
 
 <script>
-import { leaseService } from '@/services/api'
-import Modal from '@/components/Modal.vue'
-import LeaseForm from '@/components/forms/LeaseForm.vue'
-import ManualPaymentModal from '@/components/ManualPaymentModal.vue'
-import AuthService from '@/services/auth'
-import { useToast } from 'vue-toastification'
-import Pagination from '@/components/Pagination.vue'
-import AttendanceModal from '@/components/AttendanceModal.vue'
+import { leaseService } from "@/services/api";
+import Modal from "@/components/Modal.vue";
+import LeaseForm from "@/components/forms/LeaseForm.vue";
+import ManualPaymentModal from "@/components/ManualPaymentModal.vue";
+import AuthService from "@/services/auth";
+import { useToast } from "vue-toastification";
+import Pagination from "@/components/Pagination.vue";
+import AttendanceModal from "@/components/AttendanceModal.vue";
 
 export default {
-  name: 'LeasesView',
+  name: "LeasesView",
   components: {
     Modal,
     LeaseForm,
     Pagination,
     ManualPaymentModal,
-    AttendanceModal
+    AttendanceModal,
   },
   setup() {
-    const toast = useToast()
-    return { toast }
+    const toast = useToast();
+    return { toast };
   },
   data() {
     return {
@@ -227,209 +227,215 @@ export default {
       editingLease: null,
       selectedLeaseForPayment: null,
       userRole: null,
-      searchTerm: '',
+      searchTerm: "",
       debounceTimer: null,
-      activeTab: 'active',
-      paginationMeta: { total: 0, page: 1, limit: 10, totalPages: 1 }
-    }
+      activeTab: "active",
+      paginationMeta: { total: 0, page: 1, limit: 10, totalPages: 1 },
+    };
   },
   watch: {
     searchTerm() {
-      clearTimeout(this.debounceTimer)
+      clearTimeout(this.debounceTimer);
       this.debounceTimer = setTimeout(() => {
-        this.paginationMeta.page = 1
-        this.fetchLeases()
-      }, 500)
-    }
+        this.paginationMeta.page = 1;
+        this.fetchLeases();
+      }, 500);
+    },
   },
   methods: {
     async fetchLeases() {
-      this.isLoading = true
-      this.error = null
+      this.isLoading = true;
+      this.error = null;
       try {
-        const response = await leaseService.getAllLeases({
+        const params = {
           search: this.searchTerm,
           status: this.activeTab,
           page: this.paginationMeta.page,
-          limit: this.paginationMeta.limit
-        })
-        this.leases = response.data.data
-        this.paginationMeta = response.data.meta
+          limit: this.paginationMeta.limit,
+        };
+        const response = await leaseService.getAllLeases(params);
+
+        this.leases = response.data.data;
+        this.paginationMeta = response.data.meta;
       } catch (err) {
-        this.error = "Ma'lumotlarni yuklab bo'lmadi."
+        this.error = "Ma'lumotlarni yuklab bo'lmadi.";
       } finally {
-        this.isLoading = false
+        this.isLoading = false;
       }
     },
     getPaymentStatusClass(status) {
       const classMap = {
-        PAID: 'status-paid',
-        DUE: 'status-due',
-        UNPAID: 'status-unpaid'
-      }
-      return classMap[status] || ''
+        PAID: "status-paid",
+        DUE: "status-due",
+        UNPAID: "status-unpaid",
+      };
+      return classMap[status] || "";
     },
     getPaymentStatusText(status) {
       const textMap = {
         PAID: "To'langan",
-        DUE: 'Yaqinlashmoqda',
-        UNPAID: "To'lanmagan"
-      }
-      return textMap[status] || "Noma'lum"
+        DUE: "Yaqinlashmoqda",
+        UNPAID: "To'lanmagan",
+      };
+      return textMap[status] || "Noma'lum";
     },
     handlePageChange(newPage) {
-      this.paginationMeta.page = newPage
-      this.fetchLeases()
+      this.paginationMeta.page = newPage;
+      this.fetchLeases();
     },
     goToPaymentPage(lease) {
-      const paymentUrl = `/pay/lease/${lease.id}`
-      window.open(this.$router.resolve(paymentUrl).href, '_blank')
+      const paymentUrl = `/pay/lease/${lease.id}`;
+      window.open(this.$router.resolve(paymentUrl).href, "_blank");
     },
     changeTab(tabName) {
-      this.activeTab = tabName
-      this.paginationMeta.page = 1
-      this.fetchLeases()
+      this.activeTab = tabName;
+      this.paginationMeta.page = 1;
+      this.fetchLeases();
     },
     getAssetName(lease) {
-      return lease.store?.storeNumber || lease.stall?.stallNumber || "Noma'lum"
+      return lease.store?.storeNumber || lease.stall?.stallNumber || "Noma'lum";
     },
     getDurationInfo(lease) {
       if (!lease.expiryDate)
-        return { text: 'Muddatsiz', class: 'duration-indefinite' }
-      const now = new Date()
-      const expiryDate = new Date(lease.expiryDate)
-      now.setHours(0, 0, 0, 0)
-      expiryDate.setHours(0, 0, 0, 0)
-      const diffTime = expiryDate - now
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+        return { text: "Muddatsiz", class: "duration-indefinite" };
+      const now = new Date();
+      const expiryDate = new Date(lease.expiryDate);
+      now.setHours(0, 0, 0, 0);
+      expiryDate.setHours(0, 0, 0, 0);
+      const diffTime = expiryDate - now;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       if (!lease.isActive)
-        return { text: 'Arxivlangan', class: 'duration-archived' }
+        return { text: "Arxivlangan", class: "duration-archived" };
       if (diffDays < 0)
         return {
           text: `Muddati o'tgan (${Math.abs(diffDays)} kun)`,
-          class: 'duration-expired'
-        }
+          class: "duration-expired",
+        };
       if (diffDays === 0)
-        return { text: 'Bugun tugaydi', class: 'duration-ending-soon' }
+        return { text: "Bugun tugaydi", class: "duration-ending-soon" };
       if (diffDays <= 30)
-        return { text: `${diffDays} kun qoldi`, class: 'duration-ending-soon' }
-      return { text: `${diffDays} kun qoldi`, class: 'duration-normal' }
+        return { text: `${diffDays} kun qoldi`, class: "duration-ending-soon" };
+      return { text: `${diffDays} kun qoldi`, class: "duration-normal" };
     },
 
     // --- MODAL CONTROL METHODS ---
     openLeaseModal(lease) {
       // Handles both Add and Edit
-      this.editingLease = lease ? { ...lease } : null
-      this.isLeaseModalVisible = true
+      this.editingLease = lease ? { ...lease } : null;
+      this.isLeaseModalVisible = true;
     },
     closeLeaseModal() {
-      this.isLeaseModalVisible = false
-      this.editingLease = null
+      this.isLeaseModalVisible = false;
+      this.editingLease = null;
     },
     openPaymentModal(lease) {
-      this.selectedLeaseForPayment = lease
-      this.isPaymentModalVisible = true
+      this.selectedLeaseForPayment = lease;
+      this.isPaymentModalVisible = true;
     },
     closePaymentModal() {
-      this.isPaymentModalVisible = false
-      this.selectedLeaseForPayment = null
+      this.isPaymentModalVisible = false;
+      this.selectedLeaseForPayment = null;
     },
     handlePaymentSuccess() {
-      this.closePaymentModal()
-      this.toast.success("To'lov muvaffaqiyatli saqlandi!")
-      this.fetchLeases()
+      this.closePaymentModal();
+      this.toast.success("To'lov muvaffaqiyatli saqlandi!");
+      this.fetchLeases();
     },
 
     openAttendanceModal(lease) {
-      this.selectedLeaseForAttendance = lease
-      this.isAttendanceModalVisible = true
+      this.selectedLeaseForAttendance = lease;
+      this.isAttendanceModalVisible = true;
     },
 
     closeAttendanceModal() {
-      this.isAttendanceModalVisible = false
-      this.selectedLeaseForAttendance = null
+      this.isAttendanceModalVisible = false;
+      this.selectedLeaseForAttendance = null;
     },
 
     // --- FORM SUBMISSION ---
     submitLeaseForm() {
-      this.$refs.leaseForm.submitForm()
+      this.$refs.leaseForm.submitForm();
     },
     handleFormSubmit(formData) {
       if (this.editingLease) {
-        this.handleUpdateLease(formData)
+        this.handleUpdateLease(formData);
       } else {
-        this.handleCreateLease(formData)
+        this.handleCreateLease(formData);
       }
     },
 
     // --- CRUD METHODS ---
     async handleCreateLease(formData) {
       try {
-        await leaseService.createLease(formData)
-        this.closeLeaseModal()
-        await this.fetchLeases()
-        this.toast.success("Ijara muvaffaqiyatli qo'shildi!")
+        await leaseService.createLease(formData);
+        this.closeLeaseModal();
+        await this.fetchLeases();
+        this.toast.success("Ijara muvaffaqiyatli qo'shildi!");
       } catch (err) {
         const errorMessage =
-          err.response?.data?.error || 'Ijara yaratishda xatolik yuz berdi.'
-        this.toast.error(errorMessage)
+          err.response?.data?.error || "Ijara yaratishda xatolik yuz berdi.";
+        this.toast.error(errorMessage);
       }
     },
     async handleUpdateLease(formData) {
       try {
-        await leaseService.updateLease(this.editingLease.id, formData)
-        this.closeLeaseModal()
-        await this.fetchLeases()
-        this.toast.success("Ijara ma'lumotlari muvaffaqiyatli yangilandi!")
+        await leaseService.updateLease(this.editingLease.id, formData);
+        this.closeLeaseModal();
+        await this.fetchLeases();
+        this.toast.success("Ijara ma'lumotlari muvaffaqiyatli yangilandi!");
       } catch (err) {
         const errorMessage =
-          err.response?.data?.error || 'Ijarani yangilashda xatolik yuz berdi.'
-        this.toast.error(errorMessage)
+          err.response?.data?.error || "Ijarani yangilashda xatolik yuz berdi.";
+        this.toast.error(errorMessage);
       }
     },
     async handleArchiveLease(lease) {
       if (
         confirm(
-          `Haqiqatan ham "${this.getAssetName(lease)}" shartnomasini arxivga jo'natmoqchimisiz?`
+          `Haqiqatan ham "${this.getAssetName(
+            lease
+          )}" shartnomasini arxivga jo'natmoqchimisiz?`
         )
       ) {
         try {
-          await leaseService.deactivateLease(lease.id) // Assuming the service is named deactivateLease
-          await this.fetchLeases()
-          this.toast.success("Ijara arxivga jo'natildi.")
+          await leaseService.archiveLease(lease.id);
+          await this.fetchLeases();
+          this.toast.success("Ijara arxivga jo'natildi.");
         } catch (err) {
           this.toast.error(
-            err.response?.data?.error || 'Ijarani arxivlashda xatolik.'
-          )
+            err.response?.data?.error || "Ijarani arxivlashda xatolik."
+          );
         }
       }
     },
     async handleActivateLease(lease) {
       if (
         confirm(
-          `Haqiqatan ham "${this.getAssetName(lease)}" shartnomasini arxivdan chiqarmoqchimisiz?`
+          `Haqiqatan ham "${this.getAssetName(
+            lease
+          )}" shartnomasini arxivdan chiqarmoqchimisiz?`
         )
       ) {
         try {
-          await leaseService.activateLease(lease.id)
-          await this.fetchLeases()
-          this.toast.success('Ijara qayta aktivlashtirildi.')
+          await leaseService.activateLease(lease.id);
+          await this.fetchLeases();
+          this.toast.success("Ijara qayta aktivlashtirildi.");
         } catch (err) {
           this.toast.error(
-            err.response?.data?.error || 'Ijarani aktivlashtirishda xatolik.'
-          )
+            err.response?.data?.error || "Ijarani aktivlashtirishda xatolik."
+          );
         }
       }
-    }
+    },
   },
   created() {
-    const user = AuthService.getUser()
+    const user = AuthService.getUser();
     if (user) {
-      this.userRole = user.role.name // Assuming role is an object with a name property
+      this.userRole = user.role.name; // Assuming role is an object with a name property
     }
-    this.fetchLeases()
-  }
-}
+    this.fetchLeases();
+  },
+};
 </script>
 
 <style scoped>
@@ -647,9 +653,7 @@ h1 {
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
-  transition:
-    background-color 0.2s,
-    box-shadow 0.2s;
+  transition: background-color 0.2s, box-shadow 0.2s;
 }
 
 .btn-primary {

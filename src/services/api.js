@@ -122,18 +122,10 @@ export const stallService = {
 // --- LEASE SERVICE ---
 export const leaseService = {
   // GET /api/leases
-  getAllLeases(searchTerm, status = 'active', page = 1, limit = 10) {
-    const params = {
-      status,
-      page,
-      limit
-    }
-    if (searchTerm) {
-      params.search = searchTerm
-    }
-    return apiClient.get('/leases', { params })
+   getAllLeases(params) {
+    // It passes this object directly to the API client
+    return apiClient.get('/leases', { params });
   },
-
   // POST /api/leases
   createLease(leaseData) {
     return apiClient.post('/leases', leaseData)
