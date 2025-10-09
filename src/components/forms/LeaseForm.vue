@@ -232,9 +232,8 @@ export default {
           search: searchTerm,
           limit: 50
         })
-        console.log('API Response for Owners:', response)
 
-        this.availableOwners = response.data
+        this.availableOwners = response.data.data || []
       } catch (error) {
         console.error('Failed to search owners:', error)
         this.availableOwners = []
@@ -242,6 +241,7 @@ export default {
         this.isSearchingOwners = false
       }
     },
+
     onOwnerSelect(owner) {
       this.form.ownerId = owner.id
       this.editingOwnerName = owner.fullName
@@ -250,10 +250,6 @@ export default {
 
     // --- STORE SEARCH ---
     async searchAvailableStores(searchTerm) {
-      if (!searchTerm) {
-        this.availableStores = []
-        return
-      }
       this.isSearchingStores = true
       try {
         const response = await storeService.getAllStores({
@@ -261,6 +257,7 @@ export default {
           limit: 50
         })
         const allStores = response.data.data
+
         if (Array.isArray(allStores)) {
           this.availableStores = allStores.filter(
             s => s.status === "Bo'sh" || s.id === this.form.storeId
@@ -283,12 +280,9 @@ export default {
 
     // --- STALL SEARCH ---
     async searchAvailableStalls(searchTerm) {
-      if (!searchTerm) {
-        this.availableStalls = []
-        return
-      }
       this.isSearchingStalls = true
       try {
+        // Apply the same logic for stalls
         const response = await stallService.getAllStalls({
           search: searchTerm,
           limit: 50
