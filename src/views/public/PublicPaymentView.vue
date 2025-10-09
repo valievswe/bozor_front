@@ -24,13 +24,21 @@
             <span>Obyekt:</span>
             <strong>{{ lease.storeNumber || lease.stallNumber }}</strong>
           </div>
+          <div class="info-row" v-if="lease.paymentInterval">
+            <span>To'lov Turi:</span>
+            <strong>{{ lease.paymentInterval === 'MONTHLY' ? 'Oylik' : 'Kunlik' }}</strong>
+          </div>
           <hr />
           <div class="amount-row">
-            <span>Jami Summa:</span>
+            <span>Kerakli Summa:</span>
             <strong class="total-amount"
               >{{ lease.totalFee.toLocaleString('uz-UZ') }} so'm</strong
             >
           </div>
+          <p class="payment-note" v-if="lease.paymentStatus !== 'PAID'">
+            <i class="fas fa-info-circle"></i>
+            To'lov summasi aynan {{ lease.totalFee.toLocaleString('uz-UZ') }} so'm bo'lishi kerak.
+          </p>
         </div>
 
         <!-- --- START OF THE FIX --- -->
@@ -226,6 +234,18 @@ hr {
 .total-amount {
   font-weight: bold;
   color: #27ae60;
+}
+.payment-note {
+  margin: 0.75rem 0 0 0;
+  padding: 0.75rem;
+  background-color: #e3f2fd;
+  border-left: 3px solid #2196f3;
+  font-size: 0.9rem;
+  color: #1565c0;
+  border-radius: 4px;
+}
+.payment-note i {
+  margin-right: 0.5rem;
 }
 .card-footer {
   padding: 1.5rem;

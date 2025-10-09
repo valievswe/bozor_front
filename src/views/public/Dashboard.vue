@@ -100,10 +100,13 @@
 
         <div class="list-card">
           <h3>Asosiy Qarzdorlar</h3>
-          <ul class="activity-list" v-if="stats.overdueLeases.length > 0">
+          <ul class="activity-list overdue-list" v-if="stats.overdueLeases.length > 0">
             <li v-for="lease in stats.overdueLeases" :key="lease.id">
-              <span class="activity-owner">{{ lease.owner.fullName }}</span>
-              <span class="activity-asset">{{ getAssetName(lease) }}</span>
+              <div class="overdue-info">
+                <span class="activity-owner">{{ lease.owner.fullName }}</span>
+                <span class="activity-asset">{{ getAssetName(lease) }}</span>
+              </div>
+              <span class="activity-debt" v-if="lease.debt">{{ formatCurrency(lease.debt) }}</span>
             </li>
           </ul>
           <p v-else class="empty-list">Hozirda qarzdorlar yo'q.</p>
@@ -392,6 +395,22 @@ h3 {
 }
 .activity-asset {
   color: #7f8c8d;
+  font-size: 0.9rem;
+}
+.activity-debt {
+  font-weight: 600;
+  color: #e74c3c;
+  white-space: nowrap;
+}
+.overdue-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.overdue-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 .empty-list {
   color: #7f8c8d;

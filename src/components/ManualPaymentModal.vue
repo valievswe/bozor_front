@@ -18,6 +18,13 @@
             >
           </p>
 
+          <div class="form-group" v-if="expectedAmount">
+            <div class="expected-amount-info">
+              <i class="fas fa-info-circle"></i>
+              <span>Kerakli summa: <strong>{{ expectedAmount.toLocaleString('uz-UZ') }} so'm</strong></span>
+            </div>
+          </div>
+
           <div class="form-group">
             <label for="amount">Summa *</label>
             <input
@@ -25,7 +32,11 @@
               id="amount"
               v-model="formData.amount"
               required
+              :min="expectedAmount || 0"
             />
+            <small class="form-hint" v-if="expectedAmount && formData.amount < expectedAmount">
+              ⚠️ To'lov summasi kerakli summadan kam
+            </small>
           </div>
 
           <div class="form-group">
@@ -101,7 +112,8 @@ export default {
         notes: ''
       },
       isSubmitting: false,
-      error: null
+      error: null,
+      expectedAmount: 0
     }
   },
   watch: {
@@ -114,6 +126,7 @@ export default {
             parseFloat(newLease.shopMonthlyFee || 0) +
             parseFloat(newLease.stallMonthlyFee || 0) +
             parseFloat(newLease.guardFee || 0)
+          this.expectedAmount = totalFee
           this.formData.amount = totalFee > 0 ? totalFee : ''
         }
       },
@@ -267,6 +280,28 @@ textarea {
   color: #e74c3c;
   font-size: 0.9rem;
   margin-top: -0.75rem; /* Reduce space above the error message */
+}
+
+.expected-amount-info {
+  padding: 0.75rem;
+  background-color: #e3f2fd;
+  border-left: 3px solid #2196f3;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #1565c0;
+  font-size: 0.95rem;
+}
+
+.expected-amount-info i {
+  font-size: 1.1rem;
+}
+
+.form-hint {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #f39c12;
 }
 
 /* --- Button Styling (reusing classes from your main view) --- */
