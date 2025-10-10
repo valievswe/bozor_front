@@ -26,7 +26,9 @@
           </div>
           <div class="info-row" v-if="lease.paymentInterval">
             <span>To'lov Turi:</span>
-            <strong>{{ lease.paymentInterval === 'MONTHLY' ? 'Oylik' : 'Kunlik' }}</strong>
+            <strong>{{
+              lease.paymentInterval === 'MONTHLY' ? 'Oylik' : 'Kunlik'
+            }}</strong>
           </div>
           <hr />
           <div class="amount-row">
@@ -37,20 +39,18 @@
           </div>
           <p class="payment-note" v-if="lease.paymentStatus !== 'PAID'">
             <i class="fas fa-info-circle"></i>
-            To'lov summasi aynan {{ lease.totalFee.toLocaleString('uz-UZ') }} so'm bo'lishi kerak.
+            To'lov summasi aynan
+            {{ lease.totalFee.toLocaleString('uz-UZ') }} so'm bo'lishi kerak.
           </p>
         </div>
 
-        <!-- --- START OF THE FIX --- -->
         <footer class="card-footer">
-          <!-- Show this block if the lease is ALREADY PAID -->
           <div v-if="lease.paymentStatus === 'PAID'" class="status-paid-panel">
             <div class="paid-icon">✓</div>
             <h3>To'langan</h3>
             <p>Joriy davr uchun to'lov qilingan.</p>
           </div>
 
-          <!-- Show this block if the lease is NOT PAID -->
           <div v-else>
             <button
               @click="handlePayment"
@@ -68,7 +68,6 @@
             </div>
           </div>
         </footer>
-        <!-- --- END OF THE FIX --- -->
       </div>
     </div>
   </div>
@@ -80,27 +79,23 @@ import { useToast } from 'vue-toastification'
 
 export default {
   name: 'PublicPaymentView',
-  props: {
-    leaseId: { type: String, required: true }
-  },
   setup() {
     const toast = useToast()
     return { toast }
   },
   data() {
     return {
+      leaseId: null,
       lease: null,
       isLoading: true,
       isProcessing: false,
       error: null
     }
   },
-  // The 'computed' properties are no longer needed as the backend provides the data directly
   methods: {
     async fetchLeaseInfo() {
       this.isLoading = true
       try {
-        // The service function name should match what's in your api.js
         const response = await paymentService.getPublicLeaseInfo(this.leaseId)
         this.lease = response.data
       } catch (err) {
@@ -127,7 +122,6 @@ export default {
           window.location.href = response.data.checkoutUrl
         }, 1500)
       } catch (err) {
-        // The backend now sends a specific error for already-paid leases
         const errorMessage =
           err.response?.data?.error ||
           "To'lovni boshlashda kutilmagan xatolik yuz berdi."
@@ -137,6 +131,21 @@ export default {
     }
   },
   mounted() {
+    this.leaseId = this.$route.params.leaseId
+
+    console.log('Lease ID from route:', this.leaseId) // Debug log
+
+    if (
+      !this.leaseId ||
+      this.leaseId === 'null' ||
+      this.leaseId === 'undefined'
+    ) {
+      this.error = 'Ijara shartnomasi ID topilmadi'
+      this.isLoading = false
+      this.toast.error("Ijara shartnomasi ID noto'g'ri")
+      return
+    }
+
     this.fetchLeaseInfo()
   }
 }
