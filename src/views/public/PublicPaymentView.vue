@@ -136,7 +136,7 @@ export default {
       }
     }
   },
-  created() {
+  mounted() {
     this.fetchLeaseInfo()
   }
 }
