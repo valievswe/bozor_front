@@ -141,10 +141,25 @@ export default {
         }
 
         // Validate URL is from trusted domain (Payme)
-        const url = new URL(checkoutUrl)
-        const allowedDomains = ['checkout.paycom.uz', 'test.paycom.uz']
-        if (!allowedDomains.includes(url.hostname)) {
-          throw new Error("Noto'g'ri to'lov URL")
+        try {
+          const url = new URL(checkoutUrl)
+          const allowedDomains = [
+            'checkout.paycom.uz',
+            'test.paycom.uz',
+            'checkout.test.paycom.uz'
+          ]
+          if (!allowedDomains.includes(url.hostname)) {
+            throw new Error("Noto'g'ri to'lov URL: " + url.hostname)
+          }
+        } catch (urlError) {
+          // If URL parsing fails or domain not allowed
+          if (import.meta.env.DEV) {
+            console.error('Checkout URL validation error:', urlError)
+            console.error('Received URL:', checkoutUrl)
+          }
+          throw new Error(
+            urlError.message || "To'lov URL formati noto'g'ri"
+          )
         }
 
         this.toast.info("Payme sahifasiga yo'naltirilmoqda...")
