@@ -26,10 +26,10 @@
 
       <!-- NEW FIELD: Payme Kassa ID -->
       <div class="form-group">
-        <label for="paymeKassaId">Payme Kassa ID *</label>
+        <label for="kassaID">Payme Kassa ID *</label>
         <input
-          id="paymeKassaId"
-          v-model="form.paymeKassaId"
+          id="kassaID"
+          v-model="form.kassaID"
           type="text"
           required
           placeholder="Payme Business'dan olingan ID"
@@ -75,7 +75,7 @@ export default {
         storeNumber: '',
         area: null,
         description: '',
-        paymeKassaId: '',
+        kassaID: '',
         type: 'SHOP'
       }
     }
@@ -97,7 +97,7 @@ export default {
       const formData = {
         storeNumber: this.form.storeNumber,
         area: this.form.area,
-        paymeKassaId: this.form.paymeKassaId,
+        kassaID: this.form.kassaID,
         type: this.form.type,
         description: this.form.description
       }
@@ -108,7 +108,7 @@ export default {
         storeNumber: '',
         area: null,
         description: '',
-        paymeKassaId: '',
+        kassaID: '',
         type: 'SHOP'
       }
     }
