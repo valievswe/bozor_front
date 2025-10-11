@@ -109,10 +109,10 @@ export default {
         this.isLoading = false
       }
     },
+    // In your Vue component
     async handlePayment() {
       this.isProcessing = true
       try {
-        // Validate lease ID
         const leaseIdNum = parseInt(this.leaseId, 10)
         if (isNaN(leaseIdNum) || leaseIdNum <= 0) {
           this.toast.error('Ijara ID yaroqsiz')
@@ -120,7 +120,6 @@ export default {
           return
         }
 
-        // Validate amount
         if (!this.lease.totalFee || this.lease.totalFee <= 0) {
           this.toast.error("To'lov summasi yaroqsiz")
           this.isProcessing = false
@@ -129,46 +128,46 @@ export default {
 
         const payload = {
           leaseId: leaseIdNum,
-          amount: this.lease.totalFee
+          amount: this.lease.totalFee,
+          paymentMethod: 'CLICK'
         }
 
         const response = await paymentService.initiatePayment(payload)
 
-        // Validate checkout URL
         const checkoutUrl = response.data?.checkoutUrl
         if (!checkoutUrl || typeof checkoutUrl !== 'string') {
           throw new Error("To'lov URL topilmadi")
         }
 
-        // Validate URL is from trusted domain (Payme)
+        // Update allowed domains for CLICK
         try {
           const url = new URL(checkoutUrl)
           const allowedDomains = [
             'checkout.paycom.uz',
             'test.paycom.uz',
-            'checkout.test.paycom.uz'
+            'checkout.test.paycom.uz',
+            'my.click.uz',
+            'test.click.uz'
           ]
           if (!allowedDomains.includes(url.hostname)) {
             throw new Error("Noto'g'ri to'lov URL: " + url.hostname)
           }
         } catch (urlError) {
-          // If URL parsing fails or domain not allowed
           if (import.meta.env.DEV) {
             console.error('Checkout URL validation error:', urlError)
             console.error('Received URL:', checkoutUrl)
           }
-          throw new Error(
-            urlError.message || "To'lov URL formati noto'g'ri"
-          )
+          throw new Error(urlError.message || "To'lov URL formati noto'g'ri")
         }
 
-        this.toast.info("Payme sahifasiga yo'naltirilmoqda...")
+        this.toast.info("To'lov sahifasiga yo'naltirilmoqda...")
         setTimeout(() => {
           window.location.href = checkoutUrl
         }, 1500)
       } catch (err) {
         const errorMessage =
           err.response?.data?.error ||
+          err.response?.data?.message ||
           err.message ||
           "To'lovni boshlashda kutilmagan xatolik yuz berdi."
         this.toast.error(errorMessage)
