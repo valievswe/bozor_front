@@ -3,10 +3,7 @@ import axios from 'axios'
 // Validate API base URL in production
 const baseURL = import.meta.env.VITE_API_BASE_URL
 if (import.meta.env.PROD && baseURL && !baseURL.startsWith('https://')) {
-  console.warn(
-    'WARNING: API base URL should use HTTPS in production:',
-    baseURL
-  )
+  console.warn('WARNING: API base URL should use HTTPS in production:', baseURL)
 }
 
 // Create a base instance of axios with common configuration
