@@ -112,18 +112,49 @@ export default {
     async handlePayment() {
       this.isProcessing = true
       try {
+        // Validate lease ID
+        const leaseIdNum = parseInt(this.leaseId, 10)
+        if (isNaN(leaseIdNum) || leaseIdNum <= 0) {
+          this.toast.error('Ijara ID yaroqsiz')
+          this.isProcessing = false
+          return
+        }
+
+        // Validate amount
+        if (!this.lease.totalFee || this.lease.totalFee <= 0) {
+          this.toast.error("To'lov summasi yaroqsiz")
+          this.isProcessing = false
+          return
+        }
+
         const payload = {
-          leaseId: parseInt(this.leaseId, 10),
+          leaseId: leaseIdNum,
           amount: this.lease.totalFee
         }
+
         const response = await paymentService.initiatePayment(payload)
+
+        // Validate checkout URL
+        const checkoutUrl = response.data?.checkoutUrl
+        if (!checkoutUrl || typeof checkoutUrl !== 'string') {
+          throw new Error("To'lov URL topilmadi")
+        }
+
+        // Validate URL is from trusted domain (Payme)
+        const url = new URL(checkoutUrl)
+        const allowedDomains = ['checkout.paycom.uz', 'test.paycom.uz']
+        if (!allowedDomains.includes(url.hostname)) {
+          throw new Error("Noto'g'ri to'lov URL")
+        }
+
         this.toast.info("Payme sahifasiga yo'naltirilmoqda...")
         setTimeout(() => {
-          window.location.href = response.data.checkoutUrl
+          window.location.href = checkoutUrl
         }, 1500)
       } catch (err) {
         const errorMessage =
           err.response?.data?.error ||
+          err.message ||
           "To'lovni boshlashda kutilmagan xatolik yuz berdi."
         this.toast.error(errorMessage)
         this.isProcessing = false
@@ -132,8 +163,6 @@ export default {
   },
   mounted() {
     this.leaseId = this.$route.params.leaseId
-
-    console.log('Lease ID from route:', this.leaseId) // Debug log
 
     if (
       !this.leaseId ||

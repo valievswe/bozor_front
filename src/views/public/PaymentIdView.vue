@@ -83,6 +83,7 @@
 <script>
 import { paymentService } from '@/services/api'
 import { useToast } from 'vue-toastification'
+import { debounce } from '@/utils/debounce'
 
 export default {
   name: 'PaymentIdView',
@@ -95,15 +96,28 @@ export default {
       searchTerm: '',
       searchResults: [],
       isLoading: false,
-      hasSearched: false,
-      debounceTimer: null
+      hasSearched: false
     }
+  },
+  created() {
+    // Create debounced search function
+    this.debouncedSearch = debounce(async searchTerm => {
+      try {
+        const response = await paymentService.searchPublicLeases(searchTerm)
+        this.searchResults = response.data
+      } catch (error) {
+        this.toast.error('Qidiruvda xatolik yuz berdi.')
+        this.searchResults = []
+      } finally {
+        this.isLoading = false
+        this.hasSearched = true
+      }
+    }, 500)
   },
   methods: {
     handleSearch() {
       this.searchResults = []
       this.hasSearched = false
-      clearTimeout(this.debounceTimer)
 
       if (!this.searchTerm.trim()) {
         this.isLoading = false
@@ -112,25 +126,19 @@ export default {
       }
 
       this.isLoading = true
-      this.debounceTimer = setTimeout(async () => {
-        try {
-          const response = await paymentService.searchPublicLeases(
-            this.searchTerm
-          )
-          this.searchResults = response.data
-        } catch (error) {
-          this.toast.error('Qidiruvda xatolik yuz berdi.')
-          this.searchResults = []
-        } finally {
-          this.isLoading = false
-          this.hasSearched = true
-        }
-      }, 500)
+      this.debouncedSearch(this.searchTerm)
     },
     selectLease(lease) {
+      if (!lease.id) {
+        this.toast.error('Xatolik: Ijara ID topilmadi')
+        return
+      }
+
+      const leaseId = String(lease.id)
+
       this.$router.push({
         name: 'PublicPayment',
-        params: { leaseId: lease.id }
+        params: { leaseId }
       })
     },
     runExampleSearch(exampleTerm) {

@@ -229,11 +229,8 @@ export default {
       this.isSearchingOwners = true
       try {
         const response = await ownerService.getAllOwners(searchTerm)
-        console.log('API Response for Owners:', response)
-
         this.availableOwners = response.data || []
       } catch (error) {
-        console.error('Failed to search owners:', error)
         this.availableOwners = []
       } finally {
         this.isSearchingOwners = false
@@ -265,7 +262,6 @@ export default {
           this.availableStores = []
         }
       } catch (error) {
-        console.error('Failed to search for stores:', error)
         this.availableStores = []
       } finally {
         this.isSearchingStores = false
@@ -295,7 +291,6 @@ export default {
           this.availableStalls = []
         }
       } catch (error) {
-        console.error('Failed to search stalls:', error)
         this.availableStalls = []
       } finally {
         this.isSearchingStalls = false
