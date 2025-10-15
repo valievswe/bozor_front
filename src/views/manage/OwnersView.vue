@@ -99,6 +99,7 @@
           </tbody>
         </table>
       </div>
+      <Pagination :meta="paginationMeta" @page-change="handlePageChange" />
     </div>
 
     <Modal v-if="isModalVisible" @close="closeModal">
@@ -130,6 +131,7 @@ import Modal from '@/components/Modal.vue'
 import OwnerForm from '@/components/forms/OwnerForm.vue'
 import AuthService from '@/services/auth'
 import { useToast } from 'vue-toastification'
+import Pagination from '@/components/Pagination.vue'
 
 export default {
   setup() {
@@ -140,7 +142,8 @@ export default {
   name: 'OwnersView',
   components: {
     Modal,
-    OwnerForm
+    OwnerForm,
+    Pagination
   },
   data() {
     return {
@@ -155,13 +158,15 @@ export default {
       notification: {
         message: '',
         type: 'error'
-      }
+      },
+      paginationMeta: { total: 0, page: 1, limit: 10, totalPages: 1 }
     }
   },
   watch: {
     searchQuery() {
       clearTimeout(this.debounceTimer)
       this.debounceTimer = setTimeout(() => {
+        this.paginationMeta.page = 1
         this.fetchOwners()
       }, 300) // 300ms after user stops typing
     }
@@ -171,8 +176,13 @@ export default {
       this.isLoading = true
       this.error = null
       try {
-        const response = await ownerService.getAllOwners(this.searchQuery)
-        this.owners = response.data
+        const response = await ownerService.getAllOwners(
+          this.searchQuery,
+          this.paginationMeta.page,
+          this.paginationMeta.limit
+        )
+        this.owners = response.data.data
+        this.paginationMeta = response.data.meta
       } catch (err) {
         this.error = "Ma'lumotlarni yuklab bo'lmadi."
       } finally {
@@ -243,6 +253,10 @@ export default {
           this.toast.error(errorMessage)
         }
       }
+    },
+    handlePageChange(newPage) {
+      this.paginationMeta.page = newPage
+      this.fetchOwners()
     }
   },
 

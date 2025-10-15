@@ -43,8 +43,12 @@ export const authService = {
 // All functions related to owners
 export const ownerService = {
   // GET /api/owners
-  getAllOwners(searchTerm) {
-    return apiClient.get('/owners', { params: { search: searchTerm } })
+  getAllOwners(searchTerm, page = 1, limit = 10) {
+    const params = { page, limit }
+    if (searchTerm) {
+      params.search = searchTerm
+    }
+    return apiClient.get('/owners', { params })
   },
 
   searchPublicOwners(searchTerm) {
