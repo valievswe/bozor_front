@@ -91,7 +91,7 @@
                   title="To'lov sahifasiga o'tish"
                   @click="goToPaymentPage(lease)"
                 >
-                  Payme kirim
+                  Online to'lash
                 </button>
                 <button
                   class="btn-icon btn-edit"
