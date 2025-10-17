@@ -45,7 +45,6 @@ const routes = [
     name: 'PublicPayment',
     component: PublicPaymentView,
     props: true
-
   },
 
   {
