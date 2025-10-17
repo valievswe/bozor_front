@@ -2,10 +2,9 @@
   <div class="payment-container">
     <div class="payment-card">
       <div v-if="isLoading" class="loader">Ma'lumotlar yuklanmoqda...</div>
+      
       <div v-else-if="error" class="error-panel">
-        <div class="error-icon">
-          <i class="fas fa-exclamation-triangle"></i>
-        </div>
+        <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
         <h2>Xatolik Yuz Berdi</h2>
         <p>{{ error }}</p>
         <a href="/" class="home-link">Bosh sahifaga qaytish</a>
@@ -16,31 +15,20 @@
           <h2>Ijara To'lovi</h2>
         </header>
         <div class="card-body">
-          <div class="info-row">
-            <span>Tadbirkor:</span>
-            <strong>{{ lease.ownerName }}</strong>
-          </div>
-          <div class="info-row">
-            <span>Obyekt:</span>
-            <strong>{{ lease.storeNumber || lease.stallNumber }}</strong>
-          </div>
+          <div class="info-row"><span>Tadbirkor:</span><strong>{{ lease.ownerName }}</strong></div>
+          <div class="info-row"><span>Obyekt:</span><strong>{{ lease.storeNumber || lease.stallNumber }}</strong></div>
           <div class="info-row" v-if="lease.paymentInterval">
             <span>To'lov Turi:</span>
-            <strong>{{
-              lease.paymentInterval === 'MONTHLY' ? 'Oylik' : 'Kunlik'
-            }}</strong>
+            <strong>{{ lease.paymentInterval === 'MONTHLY' ? 'Oylik' : 'Kunlik' }}</strong>
           </div>
           <hr />
           <div class="amount-row">
             <span>Kerakli Summa:</span>
-            <strong class="total-amount"
-              >{{ lease.totalFee.toLocaleString('uz-UZ') }} so'm</strong
-            >
+            <strong class="total-amount">{{ lease.totalFee.toLocaleString('uz-UZ') }} so'm</strong>
           </div>
           <p class="payment-note" v-if="lease.paymentStatus !== 'PAID'">
             <i class="fas fa-info-circle"></i>
-            To'lov summasi aynan
-            {{ lease.totalFee.toLocaleString('uz-UZ') }} so'm bo'lishi kerak.
+            To'lov summasi aynan {{ lease.totalFee.toLocaleString('uz-UZ') }} so'm bo'lishi kerak.
           </p>
         </div>
 
@@ -50,22 +38,17 @@
             <h3>To'langan</h3>
             <p>Joriy davr uchun to'lov qilingan.</p>
           </div>
-
-          <div v-else>
-            <button
-              @click="handlePayment"
-              class="pay-button"
-              :disabled="isProcessing"
-            >
-              <span v-if="!isProcessing">Payme orqali to'lash</span>
+          
+          <div v-else class="payment-buttons-container">
+            <p class="payment-select-label">To'lov usulini tanlang:</p>
+            <button @click="handlePayment('PAYME')" class="pay-button payme" :disabled="isProcessing">
+              <span v-if="!isProcessing || selectedProvider !== 'PAYME'">Payme orqali</span>
               <span v-else>Bajarilmoqda...</span>
             </button>
-            <div class="payme-logo">
-              <img
-                src="https://cdn.paycom.uz/documentation_assets/payme_01.svg"
-                alt="Payme Logo"
-              />
-            </div>
+            <button @click="handlePayment('CLICK')" class="pay-button click" :disabled="isProcessing">
+              <span v-if="!isProcessing || selectedProvider !== 'CLICK'">Click orqali</span>
+              <span v-else>Bajarilmoqda...</span>
+            </button>
           </div>
         </footer>
       </div>
@@ -79,120 +62,98 @@ import { useToast } from 'vue-toastification'
 
 export default {
   name: 'PublicPaymentView',
+  props: {
+    leaseId: {
+      type: String,
+      required: true,
+    },
+  },
   setup() {
     const toast = useToast()
     return { toast }
   },
   data() {
     return {
-      leaseId: null,
       lease: null,
       isLoading: true,
       isProcessing: false,
-      error: null
+      selectedProvider: null,
+      error: null,
     }
   },
+  watch: {
+    // This watcher correctly handles the prop from the router
+    leaseId: {
+      handler(newId) {
+        if (newId && newId !== 'null' && newId !== 'undefined') {
+          this.fetchLeaseInfo(newId);
+        } else {
+          this.error = 'URL manzilda ijara ID topilmadi.';
+          this.isLoading = false;
+          this.toast.error(this.error);
+        }
+      },
+      immediate: true, 
+    },
+  },
   methods: {
-    async fetchLeaseInfo() {
-      this.isLoading = true
+    async fetchLeaseInfo(id) {
+      this.isLoading = true;
       try {
-        const response = await paymentService.getPublicLeaseInfo(this.leaseId)
-        this.lease = response.data
+        const response = await paymentService.getPublicLeaseInfo(id);
+        this.lease = response.data;
+        if (this.lease.paymentStatus === 'PAID') {
+          this.toast.info("Bu ijara uchun to'lov allaqachon amalga oshirilgan.");
+        }
       } catch (err) {
-        const errorMessage =
-          err.response?.data?.error ||
-          'Ijara shartnomasi topilmadi yoki yaroqsiz.'
-        this.error = errorMessage
-        this.toast.error(errorMessage)
-        console.error('Failed to fetch lease info:', err)
+        const errorMessage = err.response?.data?.error || 'Ijara shartnomasi topilmadi yoki yaroqsiz.';
+        this.error = errorMessage;
+        this.toast.error(errorMessage);
       } finally {
-        this.isLoading = false
+        this.isLoading = false;
       }
     },
-    // In your Vue component
-    async handlePayment() {
-      this.isProcessing = true
-      try {
-        const leaseIdNum = parseInt(this.leaseId, 10)
-        if (isNaN(leaseIdNum) || leaseIdNum <= 0) {
-          this.toast.error('Ijara ID yaroqsiz')
-          this.isProcessing = false
-          return
-        }
 
-        if (!this.lease.totalFee || this.lease.totalFee <= 0) {
-          this.toast.error("To'lov summasi yaroqsiz")
-          this.isProcessing = false
-          return
+    async handlePayment(provider) {
+      this.isProcessing = true;
+      this.selectedProvider = provider;
+      try {
+        const leaseIdNum = parseInt(this.leaseId, 10);
+        if (isNaN(leaseIdNum) || leaseIdNum <= 0) {
+          throw new Error('Ijara ID yaroqsiz');
+        }
+        if (!this.lease || typeof this.lease.totalFee !== 'number' || this.lease.totalFee < 0) {
+          throw new Error("To'lov summasi yaroqsiz");
         }
 
         const payload = {
           leaseId: leaseIdNum,
           amount: this.lease.totalFee,
-          paymentMethod: 'CLICK'
+          provider: provider.toUpperCase(),
+        };
+
+        const response = await paymentService.initiatePayment(payload);
+        const checkoutUrl = response.data?.checkoutUrl;
+        if (!checkoutUrl) {
+          throw new Error("To'lov URL topilmadi");
         }
 
-        const response = await paymentService.initiatePayment(payload)
-
-        const checkoutUrl = response.data?.checkoutUrl
-        if (!checkoutUrl || typeof checkoutUrl !== 'string') {
-          throw new Error("To'lov URL topilmadi")
-        }
-
-        // Update allowed domains for CLICK
-        try {
-          const url = new URL(checkoutUrl)
-          const allowedDomains = [
-            'checkout.paycom.uz',
-            'test.paycom.uz',
-            'checkout.test.paycom.uz',
-            'my.click.uz',
-            'test.click.uz'
-          ]
-          if (!allowedDomains.includes(url.hostname)) {
-            throw new Error("Noto'g'ri to'lov URL: " + url.hostname)
-          }
-        } catch (urlError) {
-          if (import.meta.env.DEV) {
-            console.error('Checkout URL validation error:', urlError)
-            console.error('Received URL:', checkoutUrl)
-          }
-          throw new Error(urlError.message || "To'lov URL formati noto'g'ri")
-        }
-
-        this.toast.info("To'lov sahifasiga yo'naltirilmoqda...")
+        this.toast.info("To'lov sahifasiga yo'naltirilmoqda...");
         setTimeout(() => {
-          window.location.href = checkoutUrl
-        }, 1500)
+          window.location.href = checkoutUrl;
+        }, 1500);
       } catch (err) {
-        const errorMessage =
-          err.response?.data?.error ||
-          err.response?.data?.message ||
-          err.message ||
-          "To'lovni boshlashda kutilmagan xatolik yuz berdi."
-        this.toast.error(errorMessage)
-        this.isProcessing = false
+        const errorMessage = err.response?.data?.error || err.message || "To'lovni boshlashda kutilmagan xatolik.";
+        this.toast.error(errorMessage);
+        this.isProcessing = false;
+        this.selectedProvider = null;
       }
-    }
+    },
   },
-  mounted() {
-    this.leaseId = this.$route.params.leaseId
-
-    if (
-      !this.leaseId ||
-      this.leaseId === 'null' ||
-      this.leaseId === 'undefined'
-    ) {
-      this.error = 'Ijara shartnomasi ID topilmadi'
-      this.isLoading = false
-      this.toast.error("Ijara shartnomasi ID noto'g'ri")
-      return
-    }
-
-    this.fetchLeaseInfo()
-  }
+  // The created() hook is no longer needed as the watcher replaces it.
 }
 </script>
+
 
 <style scoped>
 .status-paid-panel {

@@ -43,7 +43,9 @@ const routes = [
   {
     path: '/pay/lease/:leaseId',
     name: 'PublicPayment',
-    component: PublicPaymentView
+    component: PublicPaymentView,
+    props: true
+
   },
 
   {

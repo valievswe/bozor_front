@@ -1,3 +1,4 @@
+
 <template>
   <div class="public-view-container">
     <div class="card">
@@ -47,7 +48,6 @@
           </div>
         </div>
 
-        <!-- --- VISUAL GUIDE --- -->
         <div v-if="!searchTerm && !isLoading" class="search-guide">
           <h4 class="guide-title">Qidiruv namunasi</h4>
           <ul class="guide-list">
@@ -74,7 +74,6 @@
             </li>
           </ul>
         </div>
-        <!-- --- END OF VISUAL GUIDE --- -->
       </div>
     </div>
   </div>
@@ -83,7 +82,15 @@
 <script>
 import { paymentService } from '@/services/api'
 import { useToast } from 'vue-toastification'
-import { debounce } from '@/utils/debounce'
+
+// A simple debounce helper function. You can move this to a utils file.
+function debounce(fn, delay) {
+  let timeoutId = null;
+  return function(...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
 
 export default {
   name: 'PaymentIdView',
@@ -96,54 +103,62 @@ export default {
       searchTerm: '',
       searchResults: [],
       isLoading: false,
-      hasSearched: false
+      hasSearched: false,
+      debouncedSearch: null // We will create this in the created() hook
     }
   },
+  // The created() hook is the correct place to initialize properties
   created() {
-    // Create debounced search function
-    this.debouncedSearch = debounce(async searchTerm => {
+    // This creates a debounced version of our search logic
+    this.debouncedSearch = debounce(async () => {
+      this.isLoading = true;
       try {
-        const response = await paymentService.searchPublicLeases(searchTerm)
-        this.searchResults = response.data
+        const response = await paymentService.searchPublicLeases(this.searchTerm);
+        this.searchResults = response.data;
       } catch (error) {
-        this.toast.error('Qidiruvda xatolik yuz berdi.')
-        this.searchResults = []
+        this.toast.error('Qidiruvda xatolik yuz berdi.');
+        this.searchResults = [];
       } finally {
-        this.isLoading = false
-        this.hasSearched = true
+        this.isLoading = false;
+        this.hasSearched = true;
       }
-    }, 500)
+    }, 500); // 500ms delay
   },
+  // All your methods should be inside this single 'methods' block
   methods: {
     handleSearch() {
-      this.searchResults = []
-      this.hasSearched = false
+      this.searchResults = [];
+      this.hasSearched = false;
 
       if (!this.searchTerm.trim()) {
-        this.isLoading = false
-        this.searchResults = []
-        return
+        this.isLoading = false;
+        // If the user clears the search, we don't need to do anything else.
+        return;
       }
 
-      this.isLoading = true
-      this.debouncedSearch(this.searchTerm)
+      this.isLoading = true;
+      // Call the debounced function
+      this.debouncedSearch();
     },
+
     selectLease(lease) {
-      if (!lease.id) {
-        this.toast.error('Xatolik: Ijara ID topilmadi')
-        return
+      console.log("User clicked on this object from search results:", lease);
+
+      if (!lease || !lease.id) {
+        this.toast.error('Xatolik: Ijara ID topilmadi');
+        console.error("CRITICAL: Attempted to select a lease with no ID.", lease);
+        return;
       }
 
-      const leaseId = String(lease.id)
-
-      this.$router.push({
-        name: 'PublicPayment',
-        params: { leaseId }
-      })
+      // Use the direct path navigation, which is more robust
+      const path = `/pay/lease/${lease.id}`;
+      this.$router.push(path);
     },
+
     runExampleSearch(exampleTerm) {
-      this.searchTerm = exampleTerm
-      this.handleSearch()
+      this.searchTerm = exampleTerm;
+      // We call handleSearch to trigger the debounced search
+      this.handleSearch();
     }
   }
 }
