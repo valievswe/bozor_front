@@ -229,7 +229,7 @@ export default {
       this.isSearchingOwners = true
       try {
         const response = await ownerService.getAllOwners(searchTerm)
-        this.availableOwners = response.data || []
+        this.availableOwners = response.data.data || []
       } catch (error) {
         this.availableOwners = []
       } finally {
