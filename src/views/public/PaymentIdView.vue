@@ -32,9 +32,9 @@
               @click="selectLease(lease)"
             >
               <div class="result-item">
-                <span class="result-name">{{ lease.owner.fullName }}</span>
+                <span class="result-name">{{ lease.ownerName }}</span>
                 <span class="result-asset">{{
-                  lease.store?.storeNumber || lease.stall?.stallNumber
+                  lease.storeNumber || lease.stallNumber
                 }}</span>
               </div>
             </li>
