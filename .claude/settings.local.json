@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/vb/Desktop/bozor/src/routes/**)",
+      "Read(//c/Users/vb/Desktop/bozor/src/middlewares/**)",
+      "Read(//c/Users/vb/Desktop/bozor/src/utils/**)",
+      "Read(//c/Users/vb/Desktop/bozor/src/controllers/**)",
+      "Read(//c/Users/vb/Desktop/bozor/src/services/**)",
+      "Read(//c/Users/vb/Desktop/bozor/prisma/migrations/0_init/**)",
+      "Read(//c/Users/vb/Desktop/bozor/prisma/migrations/**)",
+      "Read(//c/Users/vb/Desktop/bozor/src/**)",
+      "Read(//c/Users/vb/Desktop/bozor/prisma/**)",
+      "Read(//c/Users/vb/Desktop/bozor/**)",
+      "Bash(cat:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

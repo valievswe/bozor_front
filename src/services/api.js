@@ -129,6 +129,34 @@ export const stallService = {
   }
 }
 
+// --- SECTION SERVICE ---
+export const sectionService = {
+  // GET /api/sections
+  getAllSections() {
+    return apiClient.get('/sections')
+  },
+
+  // GET /api/sections/:id
+  getSectionById(id) {
+    return apiClient.get(`/sections/${id}`)
+  },
+
+  // POST /api/sections
+  createSection(sectionData) {
+    return apiClient.post('/sections', sectionData)
+  },
+
+  // PATCH /api/sections/:id
+  updateSection(id, sectionData) {
+    return apiClient.patch(`/sections/${id}`, sectionData)
+  },
+
+  // DELETE /api/sections/:id
+  deleteSection(id) {
+    return apiClient.delete(`/sections/${id}`)
+  }
+}
+
 // --- LEASE SERVICE ---
 export const leaseService = {
   // GET /api/leases

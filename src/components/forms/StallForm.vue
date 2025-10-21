@@ -24,6 +24,28 @@
         />
       </div>
 
+      <div class="form-group">
+        <label for="dailyFee">Kunlik To'lov (so'm) *</label>
+        <input
+          id="dailyFee"
+          v-model.number="form.dailyFee"
+          type="number"
+          step="1000"
+          required
+          placeholder="Masalan, 50000"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="section">Bo'lim (Section)</label>
+        <select id="section" v-model="form.sectionId" :disabled="loadingSections">
+          <option :value="null">Tayinlanmagan</option>
+          <option v-for="section in sections" :key="section.id" :value="section.id">
+            {{ section.name }}
+          </option>
+        </select>
+      </div>
+
       <div class="form-group full-width">
         <label for="description">Qo'shimcha Ma'lumot</label>
         <textarea
@@ -38,6 +60,8 @@
 </template>
 
 <script>
+import { sectionService } from '@/services/api'
+
 export default {
   name: 'StallForm',
   props: {
@@ -52,8 +76,12 @@ export default {
       form: {
         stallNumber: '',
         area: null,
+        dailyFee: null,
+        sectionId: null,
         description: ''
-      }
+      },
+      sections: [],
+      loadingSections: false
     }
   },
   watch: {
@@ -70,6 +98,17 @@ export default {
     }
   },
   methods: {
+    async fetchSections() {
+      this.loadingSections = true
+      try {
+        const response = await sectionService.getAllSections()
+        this.sections = response.data || []
+      } catch (err) {
+        console.error('Failed to load sections:', err)
+      } finally {
+        this.loadingSections = false
+      }
+    },
     submitForm() {
       this.$emit('submit', this.form)
     },
@@ -77,9 +116,14 @@ export default {
       this.form = {
         stallNumber: '',
         area: null,
+        dailyFee: null,
+        sectionId: null,
         description: ''
       }
     }
+  },
+  mounted() {
+    this.fetchSections()
   }
 }
 </script>
@@ -105,7 +149,8 @@ label {
   font-size: 0.9rem;
 }
 input,
-textarea {
+textarea,
+select {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid #ddd;
@@ -116,9 +161,14 @@ textarea {
     box-shadow 0.3s;
 }
 input:focus,
-textarea:focus {
+textarea:focus,
+select:focus {
   outline: none;
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(66, 185, 131, 0.2);
+}
+select:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
 }
 </style>

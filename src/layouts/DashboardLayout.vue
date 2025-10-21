@@ -31,6 +31,11 @@
             >
           </li>
           <li>
+            <router-link to="/dashboard/sections" active-class="active"
+              >Bo'limlar</router-link
+            >
+          </li>
+          <li>
             <router-link to="/dashboard/users" active-class="active"
               >Foydalanuvchilar</router-link
             >

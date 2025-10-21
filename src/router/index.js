@@ -9,12 +9,14 @@ import LeasesView from '../views/manage/LeasesView.vue'
 import AssetsView from '../views/public/AssetsView.vue'
 import StoresView from '../views/manage/StoresView.vue'
 import StallsView from '../views/manage/StallsView.vue'
+import SectionsView from '../views/manage/SectionsView.vue'
 import UsersView from '../views/manage/UsersView.vue'
 import TransactionsView from '../views/manage/TransactionsView.vue'
 import HomeView from '../views/public/HomeView.vue'
 import PaymentIdView from '../views/public/PaymentIdView.vue'
 import PaymentSelectView from '../views/public/PaymentSelectView.vue'
 import PublicPaymentView from '../views/public/PublicPaymentView.vue'
+import StallPaymentView from '../views/public/StallPaymentView.vue'
 
 const routes = [
   {
@@ -44,6 +46,12 @@ const routes = [
     path: '/pay/lease/:leaseId',
     name: 'PublicPayment',
     component: PublicPaymentView,
+    props: true
+  },
+  {
+    path: '/pay/stall/:id',
+    name: 'StallPayment',
+    component: StallPaymentView,
     props: true
   },
 
@@ -82,6 +90,11 @@ const routes = [
         path: 'stalls', // Renders at /dashboard/stalls
         name: 'stalls',
         component: StallsView
+      },
+      {
+        path: 'sections', // Renders at /dashboard/sections
+        name: 'sections',
+        component: SectionsView
       },
       {
         path: 'users', // Renders at /dashboard/users
