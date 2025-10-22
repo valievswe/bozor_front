@@ -87,9 +87,9 @@
 
         <div class="list-card">
           <h3>Yaqinda To'langanlar</h3>
-          <ul class="activity-list" v-if="stats.recentTransactions.length > 0">
+          <ul class="activity-list" v-if="stats.recentTransactions && stats.recentTransactions.length > 0">
             <li v-for="tx in stats.recentTransactions" :key="tx.id">
-              <span class="activity-owner">{{ tx.lease.owner.fullName }}</span>
+              <span class="activity-owner">{{ tx.lease?.owner?.fullName || 'Noma\'lum' }}</span>
               <span class="activity-amount">{{
                 formatCurrency(tx.amount)
               }}</span>
@@ -100,13 +100,18 @@
 
         <div class="list-card">
           <h3>Asosiy Qarzdorlar</h3>
-          <ul class="activity-list overdue-list" v-if="stats.overdueLeases.length > 0">
+          <ul
+            class="activity-list overdue-list"
+            v-if="stats.overdueLeases && stats.overdueLeases.length > 0"
+          >
             <li v-for="lease in stats.overdueLeases" :key="lease.id">
               <div class="overdue-info">
-                <span class="activity-owner">{{ lease.owner.fullName }}</span>
+                <span class="activity-owner">{{ lease.owner?.fullName || 'Noma\'lum' }}</span>
                 <span class="activity-asset">{{ getAssetName(lease) }}</span>
               </div>
-              <span class="activity-debt" v-if="lease.debt">{{ formatCurrency(lease.debt) }}</span>
+              <span class="activity-debt" v-if="lease.debt">{{
+                formatCurrency(lease.debt)
+              }}</span>
             </li>
           </ul>
           <p v-else class="empty-list">Hozirda qarzdorlar yo'q.</p>
@@ -179,7 +184,15 @@ export default {
       })
     },
     chartData() {
-      const labels = this.stats.chartData.map(d => d.month)
+      // Add null safety check
+      if (!this.stats.chartData || !Array.isArray(this.stats.chartData)) {
+        return {
+          labels: [],
+          datasets: []
+        }
+      }
+
+      const labels = this.stats.chartData.map(d => d.month || '')
       return {
         labels,
         datasets: [
@@ -187,7 +200,7 @@ export default {
             label: 'Tushum',
             backgroundColor: 'rgba(39, 174, 96, 0.2)',
             borderColor: '#27ae60',
-            data: this.stats.chartData.map(d => d.income),
+            data: this.stats.chartData.map(d => d.income || 0),
             tension: 0.4,
             fill: true
           },
@@ -195,7 +208,7 @@ export default {
             label: 'Qarzdorlik',
             backgroundColor: 'rgba(231, 76, 60, 0.2)',
             borderColor: '#e74c3c',
-            data: this.stats.chartData.map(d => d.debt),
+            data: this.stats.chartData.map(d => d.debt || 0),
             tension: 0.4,
             fill: true
           }
