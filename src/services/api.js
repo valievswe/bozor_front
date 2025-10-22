@@ -264,16 +264,54 @@ export const exportService = {
   }
 }
 
+// --- SALE TYPE SERVICE ---
+export const saleTypeService = {
+  // GET /api/sale-types
+  getAll() {
+    return apiClient.get('/sale-types')
+  },
+
+  // GET /api/sale-types/:id
+  getById(id) {
+    return apiClient.get(`/sale-types/${id}`)
+  },
+
+  // POST /api/sale-types
+  create(saleTypeData) {
+    return apiClient.post('/sale-types', saleTypeData)
+  },
+
+  // PUT /api/sale-types/:id
+  update(id, saleTypeData) {
+    return apiClient.put(`/sale-types/${id}`, saleTypeData)
+  },
+
+  // DELETE /api/sale-types/:id
+  remove(id) {
+    return apiClient.delete(`/sale-types/${id}`)
+  }
+}
+
 // --- ATTENDANCE SERVICE ---
 export const attendanceService = {
+  // GET /api/attendance - Get all attendance records with optional filters
+  getAll(filters = {}) {
+    return apiClient.get('/attendance', { params: filters })
+  },
+
   /**
    * @description Gets all absence records for a lease in a given month.
    * @param {number} leaseId
    * @param {number} year
    * @param {number} month (1-12)
    */
-  getAbsences(leaseId, year, month) {
-    return apiClient.get('/attendance', { params: { leaseId, year, month } })
+  getAbsences(stallId, startDate, endDate, status) {
+    const params = {}
+    if (stallId) params.stallId = stallId
+    if (startDate) params.startDate = startDate
+    if (endDate) params.endDate = endDate
+    if (status) params.status = status
+    return apiClient.get('/attendance', { params })
   },
 
   /**
@@ -284,5 +322,60 @@ export const attendanceService = {
    */
   setStatus(leaseId, date, isPresent) {
     return apiClient.post('/attendance', { leaseId, date, isPresent })
+  },
+
+  // POST /api/attendance/:stallId - Create attendance for stall
+  createAttendance(stallId) {
+    return apiClient.post(`/attendance/${stallId}`)
+  },
+
+  // PUT /api/attendance/:attendanceId - Update attendance
+  updateAttendance(attendanceId, data) {
+    return apiClient.put(`/attendance/${attendanceId}`, data)
+  },
+
+  // DELETE /api/attendance/:attendanceId - Delete attendance
+  deleteAttendance(attendanceId) {
+    return apiClient.delete(`/attendance/${attendanceId}`)
+  },
+
+  // GET /api/attendance/by-date - Get all stalls with attendance for a specific date
+  getByDate(date) {
+    return apiClient.get('/attendance/by-date', { params: { date } })
+  },
+
+  // POST /api/attendance/bulk - Create attendance for all stalls on a date
+  bulkCreate(date) {
+    return apiClient.post('/attendance/bulk', { date })
+  },
+
+  // PUT /api/attendance/bulk-update - Update multiple attendance records
+  bulkUpdate(updates) {
+    return apiClient.put('/attendance/bulk-update', { updates })
+  },
+
+  // POST /api/attendance/mark-all-paid - Mark all as paid for a date
+  markAllPaid(date) {
+    return apiClient.post('/attendance/mark-all-paid', { date })
+  }
+}
+
+// --- STALL PAYMENT SERVICE ---
+export const stallPaymentService = {
+  // GET /api/payments/public/stalls/:id - Get stall info for payment
+  getStallForPayment(stallId) {
+    return apiClient.get(`/payments/public/stalls/${stallId}`)
+  },
+
+  // POST /api/payments/public/stalls/:id/pay - Initiate stall payment
+  initiatePayment(stallId, paymentMethod = 'CLICK') {
+    return apiClient.post(`/payments/public/stalls/${stallId}/pay`, {
+      payment_method: paymentMethod
+    })
+  },
+
+  // GET /api/payments/public/stalls/:id/attendance-today - Get today's attendance
+  getTodayAttendance(stallId) {
+    return apiClient.get(`/payments/public/stalls/${stallId}/attendance-today`)
   }
 }

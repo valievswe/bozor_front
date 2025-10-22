@@ -10,6 +10,10 @@ import AssetsView from '../views/public/AssetsView.vue'
 import StoresView from '../views/manage/StoresView.vue'
 import StallsView from '../views/manage/StallsView.vue'
 import SectionsView from '../views/manage/SectionsView.vue'
+import SaleTypesView from '../views/manage/SaleTypesView.vue'
+import AttendanceView from '../views/manage/AttendanceView.vue'
+import DailyReportView from '../views/manage/DailyReportView.vue'
+import MonthlyReportView from '../views/manage/MonthlyReportView.vue'
 import UsersView from '../views/manage/UsersView.vue'
 import TransactionsView from '../views/manage/TransactionsView.vue'
 import HomeView from '../views/public/HomeView.vue'
@@ -95,6 +99,26 @@ const routes = [
         path: 'sections', // Renders at /dashboard/sections
         name: 'sections',
         component: SectionsView
+      },
+      {
+        path: 'sale-types', // Renders at /dashboard/sale-types
+        name: 'sale-types',
+        component: SaleTypesView
+      },
+      {
+        path: 'attendance', // Renders at /dashboard/attendance
+        name: 'attendance',
+        component: AttendanceView
+      },
+      {
+        path: 'reports/daily', // Renders at /dashboard/reports/daily
+        name: 'daily-report',
+        component: DailyReportView
+      },
+      {
+        path: 'reports/monthly', // Renders at /dashboard/reports/monthly
+        name: 'monthly-report',
+        component: MonthlyReportView
       },
       {
         path: 'users', // Renders at /dashboard/users

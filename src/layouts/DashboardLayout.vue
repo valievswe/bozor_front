@@ -36,6 +36,26 @@
             >
           </li>
           <li>
+            <router-link to="/dashboard/sale-types" active-class="active"
+              >Savdo Turlari</router-link
+            >
+          </li>
+          <li>
+            <router-link to="/dashboard/attendance" active-class="active"
+              >Davomat</router-link
+            >
+          </li>
+          <li>
+            <router-link to="/dashboard/reports/daily" active-class="active"
+              >Kunlik Hisobot</router-link
+            >
+          </li>
+          <li>
+            <router-link to="/dashboard/reports/monthly" active-class="active"
+              >Oylik Hisobot</router-link
+            >
+          </li>
+          <li>
             <router-link to="/dashboard/users" active-class="active"
               >Foydalanuvchilar</router-link
             >

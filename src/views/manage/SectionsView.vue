@@ -38,7 +38,7 @@
               <td class="description-cell">{{ section.description || '-' }}</td>
               <td>
                 <span class="stall-count">
-                  {{ section.stalls ? section.stalls.length : 0 }}
+                  {{ section.Stall ? section.Stall.length : 0 }}
                 </span>
               </td>
               <td class="actions">
@@ -169,7 +169,7 @@ export default {
       }
     },
     async handleDeleteSection(section) {
-      const stallCount = section.stalls ? section.stalls.length : 0
+      const stallCount = section.Stall ? section.Stall.length : 0
 
       let confirmMessage = `Haqiqatan ham "${section.name}" bo'limini o'chirmoqchimisiz?`
       if (stallCount > 0) {

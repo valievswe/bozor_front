@@ -37,11 +37,39 @@
       </div>
 
       <div class="form-group">
-        <label for="section">Bo'lim (Section)</label>
-        <select id="section" v-model="form.sectionId" :disabled="loadingSections">
-          <option :value="null">Tayinlanmagan</option>
-          <option v-for="section in sections" :key="section.id" :value="section.id">
+        <label for="section">Bo'lim (Section) *</label>
+        <select
+          id="section"
+          v-model="form.sectionId"
+          :disabled="loadingSections"
+          required
+        >
+          <option :value="null">Tanlang</option>
+          <option
+            v-for="section in sections"
+            :key="section.id"
+            :value="section.id"
+          >
             {{ section.name }}
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="saleType">Savdo Turi *</label>
+        <select
+          id="saleType"
+          v-model="form.saleTypeId"
+          :disabled="loadingSaleTypes"
+          required
+        >
+          <option :value="null">Tanlang</option>
+          <option
+            v-for="saleType in saleTypes"
+            :key="saleType.id"
+            :value="saleType.id"
+          >
+            {{ saleType.name }} ({{ saleType.tax }} so'm)
           </option>
         </select>
       </div>
@@ -60,7 +88,7 @@
 </template>
 
 <script>
-import { sectionService } from '@/services/api'
+import { sectionService, saleTypeService } from '@/services/api'
 
 export default {
   name: 'StallForm',
@@ -78,10 +106,13 @@ export default {
         area: null,
         dailyFee: null,
         sectionId: null,
+        saleTypeId: null,
         description: ''
       },
       sections: [],
-      loadingSections: false
+      saleTypes: [],
+      loadingSections: false,
+      loadingSaleTypes: false
     }
   },
   watch: {
@@ -109,6 +140,17 @@ export default {
         this.loadingSections = false
       }
     },
+    async fetchSaleTypes() {
+      this.loadingSaleTypes = true
+      try {
+        const response = await saleTypeService.getAll()
+        this.saleTypes = response.data || []
+      } catch (err) {
+        console.error('Failed to load sale types:', err)
+      } finally {
+        this.loadingSaleTypes = false
+      }
+    },
     submitForm() {
       this.$emit('submit', this.form)
     },
@@ -118,12 +160,14 @@ export default {
         area: null,
         dailyFee: null,
         sectionId: null,
+        saleTypeId: null,
         description: ''
       }
     }
   },
   mounted() {
     this.fetchSections()
+    this.fetchSaleTypes()
   }
 }
 </script>
