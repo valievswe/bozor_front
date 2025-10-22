@@ -212,11 +212,38 @@ export default {
   methods: {
     async fetchStats() {
       this.isLoading = true
+      this.error = null
       try {
         const response = await reportService.getDashboardStats()
+        console.log('Dashboard stats response:', response)
+
+        // Validate response structure
+        if (!response.data) {
+          throw new Error('API ma\'lumot qaytarmadi')
+        }
+
         this.stats = response.data
       } catch (err) {
-        this.error = "Statistikani yuklab bo'lmadi."
+        console.error('Dashboard stats error:', err)
+        console.error('Error response:', err.response)
+
+        // Show specific error message
+        if (err.response?.data?.message) {
+          this.error = err.response.data.message
+          this.toast.error(err.response.data.message)
+        } else if (err.response?.status === 401) {
+          this.error = 'Tizimga qayta kiring'
+          this.toast.error('Autentifikatsiya xatosi. Iltimos qayta kiring.')
+        } else if (err.response?.status === 403) {
+          this.error = 'Ruxsat yo\'q'
+          this.toast.error('Sizda bu ma\'lumotni ko\'rish huquqi yo\'q')
+        } else if (err.message) {
+          this.error = err.message
+          this.toast.error(err.message)
+        } else {
+          this.error = "Statistikani yuklab bo'lmadi"
+          this.toast.error("Statistikani yuklab bo'lmadi")
+        }
       } finally {
         this.isLoading = false
       }

@@ -36,8 +36,12 @@ window.addEventListener('unhandledrejection', event => {
     console.error('Unhandled Promise Rejection:', event.reason)
   }
 
-  const toast = useToast()
-  toast.error('Kutilmagan xatolik yuz berdi')
+  // Only show generic error if it's not an axios error
+  // (axios errors should be handled in the components)
+  if (!event.reason?.isAxiosError) {
+    const toast = useToast()
+    toast.error('Kutilmagan xatolik yuz berdi')
+  }
   event.preventDefault()
 })
 
