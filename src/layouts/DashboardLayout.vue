@@ -93,12 +93,14 @@
 </template>
 
 <script>
+import authService from '@/services/auth'
+
 export default {
   name: 'DashboardLayout',
   data() {
     return {
       isSidebarCollapsed: false,
-      userRole: localStorage.getItem('userRole')
+      userRole: authService.getUser()?.role || null
     }
   },
   methods: {

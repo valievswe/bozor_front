@@ -197,6 +197,7 @@ import { stallService, sectionService } from '@/services/api'
 import Modal from '@/components/Modal.vue'
 import StallForm from '@/components/forms/StallForm.vue'
 import QrcodeVue from 'qrcode.vue'
+import authService from '@/services/auth'
 
 export default {
   name: 'StallsView',
@@ -211,7 +212,7 @@ export default {
       isModalVisible: false,
       isQRModalVisible: false,
       selectedStall: null,
-      userRole: localStorage.getItem('userRole'),
+      userRole: authService.getUser()?.role || null,
       editingStall: null
     }
   },

@@ -98,6 +98,7 @@
 import { sectionService } from '@/services/api'
 import Modal from '@/components/Modal.vue'
 import SectionForm from '@/components/forms/SectionForm.vue'
+import authService from '@/services/auth'
 
 export default {
   name: 'SectionsView',
@@ -108,7 +109,7 @@ export default {
       isLoading: false,
       error: null,
       isModalVisible: false,
-      userRole: localStorage.getItem('userRole'),
+      userRole: authService.getUser()?.role || null,
       editingSection: null
     }
   },
